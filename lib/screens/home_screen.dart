@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Notizen importieren'),
+        title: const Text('Training importieren'),
         content: SizedBox(
           width: double.maxFinite,
           height: 300,
