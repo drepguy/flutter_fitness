@@ -129,6 +129,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     '${formatDateTime(_workout!.startedAt)}${_workout!.endedAt != null ? ' — ${formatDateTime(_workout!.endedAt!)}' : ''}',
                     style: const TextStyle(color: AppTheme.muted),
                   ),
+                  if (_workout!.endedAt != null)
+                    Text(
+                      formatDuration(
+                          _workout!.endedAt!.difference(_workout!.startedAt)),
+                      style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold),
+                    ),
                 ],
               );
             },

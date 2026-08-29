@@ -334,8 +334,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(formatDateTime(workout.startedAt),
-                  style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
+              Row(
+                children: [
+                  Text(formatDateTime(workout.startedAt),
+                      style: const TextStyle(
+                          color: AppTheme.muted, fontSize: 13)),
+                  if (!isActive && workout.endedAt != null) ...[
+                    const Text(' · ', style: TextStyle(color: AppTheme.muted)),
+                    Text(
+                        formatDuration(
+                            workout.endedAt!.difference(workout.startedAt)),
+                        style: const TextStyle(
+                            color: AppTheme.muted, fontSize: 13)),
+                  ],
+                ],
+              ),
               if (workout.notes != null && workout.notes!.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(workout.notes!,
