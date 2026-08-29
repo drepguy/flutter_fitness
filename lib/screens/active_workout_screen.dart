@@ -118,6 +118,69 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     });
   }
 
+  Future<Exercise?> _predictNextExercise() async {
+    if (_exercises.isEmpty) {
+      final lastWorkout = await (widget.db.select(widget.db.workouts)
+            ..where((w) =>
+                w.gymId.equals(widget.gym.id) &
+                w.endedAt.isNotNull() &
+                w.id.isNotValue(_workout.id))
+          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
+          ..limit(1))
+          .getSingleOrNull();
+      if (lastWorkout == null) return null;
+
+      final lastWes = await (widget.db.select(widget.db.workoutExercises)
+            ..where((we) => we.workoutId.equals(lastWorkout.id))
+            ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
+          .get();
+      if (lastWes.isEmpty) return null;
+
+      return (widget.db.select(widget.db.exercises)
+            ..where((e) => e.id.equals(lastWes.first.exerciseId)))
+          .getSingleOrNull();
+    }
+
+    final lastWorkout = await (widget.db.select(widget.db.workouts)
+          ..where((w) =>
+              w.gymId.equals(widget.gym.id) &
+              w.endedAt.isNotNull() &
+              w.id.isNotValue(_workout.id))
+        ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
+        ..limit(1))
+        .getSingleOrNull();
+    if (lastWorkout == null) return null;
+
+    final lastWes = await (widget.db.select(widget.db.workoutExercises)
+          ..where((we) => we.workoutId.equals(lastWorkout.id))
+          ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
+        .get();
+
+    final currentExerciseIds = _exercises.map((e) => e.exercise.id).toSet();
+
+    for (final we in lastWes) {
+      if (!currentExerciseIds.contains(we.exerciseId)) {
+        return (widget.db.select(widget.db.exercises)
+              ..where((e) => e.id.equals(we.exerciseId)))
+            .getSingleOrNull();
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _showExercisePicker() async {
+    final suggested = await _predictNextExercise();
+    final exercise = await showDialog<Exercise>(
+      context: context,
+      builder: (_) => ExercisePickerDialog(
+        db: widget.db,
+        suggestedExercise: suggested,
+      ),
+    );
+    if (exercise != null) _addExercise(exercise);
+  }
+
   Future<void> _removeExercise(_ActiveExercise ae) async {
     for (final set in ae.sets) {
       _controllers.remove(set.id)?.dispose();
@@ -241,16 +304,19 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           children: [
             Expanded(
               child: _exercises.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_circle_outline,
-                              size: 64, color: AppTheme.muted),
-                          const SizedBox(height: 12),
-                          Text('Übung hinzufügen um zu starten',
-                              style: TextStyle(color: AppTheme.muted)),
-                        ],
+                  ? GestureDetector(
+                      onTap: _showExercisePicker,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_circle_outline,
+                                size: 64, color: AppTheme.muted),
+                            const SizedBox(height: 12),
+                            Text('Übung hinzufügen um zu starten',
+                                style: TextStyle(color: AppTheme.muted)),
+                          ],
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -471,15 +537,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       child: Row(
         children: [
           OutlinedButton.icon(
-            onPressed: () async {
-              final exercise = await showDialog<Exercise>(
-                context: context,
-                builder: (_) => ExercisePickerDialog(
-                  db: widget.db,
-                ),
-              );
-              if (exercise != null) _addExercise(exercise);
-            },
+            onPressed: _showExercisePicker,
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Übung'),
           ),

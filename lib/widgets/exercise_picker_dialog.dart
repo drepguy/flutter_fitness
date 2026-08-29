@@ -5,8 +5,13 @@ import '../theme/app_theme.dart';
 
 class ExercisePickerDialog extends StatefulWidget {
   final AppDatabase db;
+  final Exercise? suggestedExercise;
 
-  const ExercisePickerDialog({super.key, required this.db});
+  const ExercisePickerDialog({
+    super.key,
+    required this.db,
+    this.suggestedExercise,
+  });
 
   @override
   State<ExercisePickerDialog> createState() => _ExercisePickerDialogState();
@@ -24,13 +29,14 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
 
   Future<void> _loadExercises() async {
     final query = widget.db.select(widget.db.exercises).join([
-      leftOuterJoin(widget.db.exerciseAliases,
-          widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id)),
+      leftOuterJoin(
+          widget.db.exerciseAliases,
+          widget.db.exerciseAliases.exerciseId
+              .equalsExp(widget.db.exercises.id)),
     ]);
 
     if (_search.isNotEmpty) {
-      query.where(
-          widget.db.exercises.name.like('%$_search%') |
+      query.where(widget.db.exercises.name.like('%$_search%') |
           widget.db.exerciseAliases.alias.like('%$_search%'));
     }
 
@@ -52,6 +58,8 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final suggested = widget.suggestedExercise;
+
     return AlertDialog(
       title: const Text('Übung auswählen'),
       content: SizedBox(
@@ -59,6 +67,20 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
         height: 400,
         child: Column(
           children: [
+            if (suggested != null && _search.isEmpty) ...[
+              ListTile(
+                leading: const Icon(Icons.auto_awesome,
+                    color: AppTheme.primary, size: 20),
+                title: Text(suggested.name),
+                subtitle: Text('Empfohlen',
+                    style: TextStyle(color: AppTheme.primary, fontSize: 12)),
+                tileColor: AppTheme.primaryContainer.withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                onTap: () => Navigator.pop(context, suggested),
+              ),
+              const SizedBox(height: 4),
+            ],
             TextField(
               decoration: const InputDecoration(
                 hintText: 'Suchen...',
@@ -75,11 +97,15 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
                 itemCount: _exercises.length,
                 itemBuilder: (context, i) {
                   final e = _exercises[i];
+                  final isSuggested =
+                      suggested != null && e.exercise.id == suggested.id;
                   return ListTile(
                     title: Text(e.exercise.name),
                     subtitle: Text(e.exercise.category,
                         style: const TextStyle(
                             color: AppTheme.muted, fontSize: 12)),
+                    tileColor:
+                        isSuggested ? AppTheme.primaryContainer.withValues(alpha: 0.3) : null,
                     onTap: () => Navigator.pop(context, e.exercise),
                   );
                 },
