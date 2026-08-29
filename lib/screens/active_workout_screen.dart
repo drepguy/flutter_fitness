@@ -341,10 +341,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       }
     }
     if (lastSetTime != null) {
-      final diff = endedAt.difference(lastSetTime);
-      if (diff.inMinutes > 30) {
-        endedAt = lastSetTime.add(const Duration(minutes: 1));
-      }
+      endedAt = lastSetTime.add(const Duration(minutes: 1));
     }
 
     await (widget.db.update(widget.db.workouts)
