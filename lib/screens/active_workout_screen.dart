@@ -28,6 +28,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
   bool _showRestTimer = false;
+  final Map<int, _SetControllers> _controllers = {};
 
   @override
   void initState() {
@@ -38,6 +39,22 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     } else {
       _createWorkout();
     }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  _SetControllers _getControllers(WorkoutSet set) {
+    return _controllers.putIfAbsent(set.id, () => _SetControllers(
+      reps: TextEditingController(text: '${set.reps}'),
+      weight: TextEditingController(text: formatWeight(set.weightKg)),
+      rpe: TextEditingController(text: set.rpe?.toString() ?? ''),
+    ));
   }
 
   Future<void> _createWorkout() async {
@@ -102,6 +119,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Future<void> _removeExercise(_ActiveExercise ae) async {
+    for (final set in ae.sets) {
+      _controllers.remove(set.id)?.dispose();
+    }
     await (widget.db.delete(widget.db.workoutExercises)
           ..where((w) => w.id.equals(ae.workoutExercise.id)))
         .go();
@@ -162,20 +182,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return lastSets.last;
   }
 
-  Future<void> _updateSet(WorkoutSet set, {int? reps, double? weightKg, int? rpe, bool? isWarmup, bool? isFailure, String? note}) async {
+  Future<void> _updateSet(WorkoutSet set, {int? reps, double? weightKg, int? rpe}) async {
     await (widget.db.update(widget.db.workoutSets)
           ..where((s) => s.id.equals(set.id)))
         .write(WorkoutSetsCompanion(
       reps: reps != null ? Value(reps) : const Value.absent(),
       weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
       rpe: rpe != null ? Value(rpe) : const Value.absent(),
-      isWarmup: isWarmup != null ? Value(isWarmup) : const Value.absent(),
-      isFailure: isFailure != null ? Value(isFailure) : const Value.absent(),
-      note: note != null ? Value(note) : const Value.absent(),
     ));
   }
 
   Future<void> _deleteSet(WorkoutSet set, _ActiveExercise ae) async {
+    _controllers.remove(set.id)?.dispose();
     await (widget.db.delete(widget.db.workoutSets)
           ..where((s) => s.id.equals(set.id)))
         .go();
@@ -209,35 +227,42 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.gym.name),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _exercises.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add_circle_outline,
-                            size: 64, color: AppTheme.muted),
-                        const SizedBox(height: 12),
-                        Text('Übung hinzufügen um zu starten',
-                            style: TextStyle(color: AppTheme.muted)),
-                      ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showPauseDialog();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.gym.name),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: _exercises.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              size: 64, color: AppTheme.muted),
+                          const SizedBox(height: 12),
+                          Text('Übung hinzufügen um zu starten',
+                              style: TextStyle(color: AppTheme.muted)),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _exercises.length,
+                      itemBuilder: (context, i) =>
+                          _buildExerciseCard(_exercises[i]),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _exercises.length,
-                    itemBuilder: (context, i) =>
-                        _buildExerciseCard(_exercises[i]),
-                  ),
-          ),
-          _buildBottomBar(),
-        ],
+            ),
+            _buildBottomBar(),
+          ],
+        ),
       ),
     );
   }
@@ -346,135 +371,90 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Widget _buildSetRow(WorkoutSet set, _ActiveExercise ae) {
+    final c = _getControllers(set);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 40,
-                child: Text(
-                  '${set.setNo}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: AppTheme.primary),
-                ),
-              ),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: TextField(
-                    controller: TextEditingController(text: '${set.reps}'),
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                      isDense: true,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (v) {
-                      final reps = int.tryParse(v) ?? 0;
-                      _updateSet(set, reps: reps);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: TextField(
-                    controller:
-                        TextEditingController(text: formatWeight(set.weightKg)),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                      isDense: true,
-                    ),
-                    onChanged: (v) {
-                      final w = double.tryParse(v) ?? 0;
-                      _updateSet(set, weightKg: w);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 50,
-                child: SizedBox(
-                  height: 36,
-                  child: TextField(
-                    controller: TextEditingController(
-                        text: set.rpe?.toString() ?? ''),
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: const InputDecoration(
-                      hintText: '-',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                      isDense: true,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (v) {
-                      final rpe = int.tryParse(v);
-                      _updateSet(set, rpe: rpe);
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 32,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
-                  onPressed: () => _deleteSet(set, ae),
-                ),
-              ),
-            ],
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${set.setNo}',
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: AppTheme.primary),
+            ),
           ),
-          Row(
-            children: [
-              const SizedBox(width: 40),
-              FilterChip(
-                label: Text(
-                  'Aufwärmen',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: set.isWarmup ? AppTheme.secondary : AppTheme.muted,
-                  ),
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: c.reps,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
+                  isDense: true,
                 ),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                onSelected: (_) {
-                  _updateSet(set, isWarmup: !set.isWarmup);
-                  setState(() {});
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  final reps = int.tryParse(v) ?? 0;
+                  _updateSet(set, reps: reps);
                 },
-                selected: set.isWarmup,
-                selectedColor: AppTheme.secondary.withValues(alpha: 0.2),
               ),
-              const SizedBox(width: 8),
-              FilterChip(
-                label: Text(
-                  'Zum Versagen',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: set.isFailure ? AppTheme.secondary : AppTheme.muted,
-                  ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: c.weight,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
+                  isDense: true,
                 ),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                onSelected: (_) {
-                  _updateSet(set, isFailure: !set.isFailure);
-                  setState(() {});
+                onChanged: (v) {
+                  final w = double.tryParse(v) ?? 0;
+                  _updateSet(set, weightKg: w);
                 },
-                selected: set.isFailure,
-                selectedColor: AppTheme.secondary.withValues(alpha: 0.2),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 50,
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: c.rpe,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: '-',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
+                  isDense: true,
+                ),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  final rpe = int.tryParse(v);
+                  _updateSet(set, rpe: rpe);
+                },
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 32,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
+              onPressed: () => _deleteSet(set, ae),
+            ),
           ),
         ],
       ),
@@ -571,6 +551,29 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       ),
     );
   }
+
+  void _showPauseDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Training pausieren?'),
+        content: const Text('Das Training wird gespeichert und kann später fortgesetzt werden.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: const Text('Speichern & Beenden'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ActiveExercise {
@@ -583,4 +586,22 @@ class _ActiveExercise {
     required this.exercise,
     required this.sets,
   });
+}
+
+class _SetControllers {
+  final TextEditingController reps;
+  final TextEditingController weight;
+  final TextEditingController rpe;
+
+  _SetControllers({
+    required this.reps,
+    required this.weight,
+    required this.rpe,
+  });
+
+  void dispose() {
+    reps.dispose();
+    weight.dispose();
+    rpe.dispose();
+  }
 }

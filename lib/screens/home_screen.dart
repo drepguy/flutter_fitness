@@ -205,13 +205,29 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  WorkoutDetailScreen(db: widget.db, workoutId: workout.id),
-            ),
-          );
+          if (isActive) {
+            final gym = await (widget.db.select(widget.db.gyms)
+                  ..where((g) => g.id.equals(workout.gymId!)))
+                .getSingle();
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ActiveWorkoutScreen(
+                  db: widget.db,
+                  gym: gym,
+                  workout: workout,
+                ),
+              ),
+            );
+          } else {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => WorkoutDetailScreen(
+                    db: widget.db, workoutId: workout.id),
+              ),
+            );
+          }
           _loadData();
         },
         child: Padding(

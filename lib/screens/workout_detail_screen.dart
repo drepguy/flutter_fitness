@@ -100,13 +100,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     if (_workout == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final isActive = _workout!.endedAt == null;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_editing ? 'Training bearbeiten' : 'Training ansehen'),
         actions: [
-          if (!isActive && !_editing)
+          if (!_editing)
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => setState(() => _editing = true),
