@@ -172,7 +172,43 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           children: [
-            for (final gym in _gyms) _buildGymCard(gym),
+            if (_gyms.isEmpty)
+              Card(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(db: widget.db),
+                      ),
+                    );
+                    _loadData();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              size: 48, color: AppTheme.primary),
+                          const SizedBox(height: 12),
+                          Text('Erstelle dein erstes Studio',
+                              style: TextStyle(
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text('Tippe hier um loszulegen',
+                              style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              for (final gym in _gyms) _buildGymCard(gym),
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.only(left: 4),
