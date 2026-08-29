@@ -387,6 +387,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: AppTheme.secondary,
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
