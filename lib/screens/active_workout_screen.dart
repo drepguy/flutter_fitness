@@ -228,7 +228,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: _workout.endedAt != null,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         _showPauseDialog();
