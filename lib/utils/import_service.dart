@@ -42,14 +42,19 @@ class ImportService {
 
       for (final workout in section.workouts) {
         final startedAt = DateTime(workout.year, workout.month, workout.day, 17);
-        final workoutCreatedAt = now;
+
+        int totalSets = 0;
+        for (final exLine in workout.exercises) {
+          totalSets += exLine.sets.length;
+        }
+        final endedAt = startedAt.add(Duration(minutes: 3 * totalSets) + const Duration(minutes: 1));
 
         final workoutId = await db.into(db.workouts).insert(
               WorkoutsCompanion.insert(
                 gymId: Value(gymId),
                 startedAt: startedAt,
-                endedAt: Value(startedAt.add(const Duration(hours: 1, minutes: 30))),
-                createdAt: workoutCreatedAt,
+                endedAt: Value(endedAt),
+                createdAt: now,
               ),
             );
 
