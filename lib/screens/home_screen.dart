@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -88,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final service = ExportService(widget.db);
     final text = await service.exportAsText();
     await SharePlus.instance.share(
-      ShareParams(text: text, subject: 'UL Fitness Export'),
+      ShareParams(text: text, subject: 'Flutter Fitness Export'),
     );
   }
 
@@ -120,7 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: _selectionMode
             ? Text('${_selectedIds.length} ausgewählt')
-            : const Text('UL Fitness'),
+            : Text('Flutter Fitness',
+                style: GoogleFonts.orbitron(
+                    fontWeight: FontWeight.bold, fontSize: 20)),
         leading: _selectionMode
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -182,16 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Willkommen!',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
-            const SizedBox(height: 4),
-            Text('Bleib stark. Trainier konsequent.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.muted,
-                    )),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             Text('Training starten',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,

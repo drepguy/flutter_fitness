@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -72,11 +73,12 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'UL Fitness',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
+                      'Flutter Fitness',
+                      style: GoogleFonts.orbitron(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 28,
+                        color: AppTheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     const SizedBox(

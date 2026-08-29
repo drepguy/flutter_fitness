@@ -757,7 +757,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: const Text('Speichern & Beenden'),
+            child: const Text('Speichern & Pausieren'),
           ),
         ],
       ),
