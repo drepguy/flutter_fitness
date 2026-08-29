@@ -31,6 +31,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   bool _saving = false;
   bool _showRestTimer = false;
   final Map<int, _SetControllers> _controllers = {};
+  final Map<int, _SetFocusNodes> _focusNodes = {};
 
   Timer? _stopwatchTimer;
   int _elapsedSeconds = 0;
@@ -61,6 +62,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     for (final c in _controllers.values) {
       c.dispose();
     }
+    for (final f in _focusNodes.values) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -70,6 +74,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       weight: TextEditingController(text: formatWeight(set.weightKg)),
       rpe: TextEditingController(text: set.rpe?.toString() ?? ''),
     ));
+  }
+
+  _SetFocusNodes _getFocusNodes(WorkoutSet set) {
+    return _focusNodes.putIfAbsent(set.id, () => _SetFocusNodes());
   }
 
   void _startStopwatch() {
@@ -219,6 +227,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Future<void> _removeExercise(_ActiveExercise ae) async {
     for (final set in ae.sets) {
       _controllers.remove(set.id)?.dispose();
+      _focusNodes.remove(set.id)?.dispose();
     }
     await (widget.db.delete(widget.db.workoutExercises)
           ..where((w) => w.id.equals(ae.workoutExercise.id)))
@@ -292,6 +301,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Future<void> _deleteSet(WorkoutSet set, _ActiveExercise ae) async {
     _controllers.remove(set.id)?.dispose();
+    _focusNodes.remove(set.id)?.dispose();
     await (widget.db.delete(widget.db.workoutSets)
           ..where((s) => s.id.equals(set.id)))
         .go();
@@ -492,6 +502,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Widget _buildSetRow(WorkoutSet set, _ActiveExercise ae) {
     final c = _getControllers(set);
+    final f = _getFocusNodes(set);
+    final timeStr =
+        '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
     return Padding(
       padding: EdgeInsets.zero,
       child: SizedBox(
@@ -500,20 +513,36 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           children: [
             SizedBox(
               width: 40,
-              child: Text(
-                '${set.setNo}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppTheme.primary),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${set.setNo}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                        fontSize: 13),
+                  ),
+                  Text(
+                    timeStr,
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 9),
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: TextField(
                 controller: c.reps,
+                focusNode: f.reps,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.reps.selection = TextSelection(
                     baseOffset: 0, extentOffset: c.reps.text.length),
+                textInputAction: TextInputAction.next,
+                onSubmitted: (_) =>
+                    FocusScope.of(context).requestFocus(f.weight),
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.zero,
                   isCollapsed: true,
@@ -532,12 +561,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             Expanded(
               child: TextField(
                 controller: c.weight,
+                focusNode: f.weight,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.weight.selection = TextSelection(
                     baseOffset: 0, extentOffset: c.weight.text.length),
+                textInputAction: TextInputAction.next,
+                onSubmitted: (_) =>
+                    FocusScope.of(context).requestFocus(f.rpe),
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.zero,
                   isCollapsed: true,
@@ -546,7 +579,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   focusedBorder: _setBorderFocused,
                 ),
                 onChanged: (v) {
-                  final w = double.tryParse(v) ?? 0;
+                  final w = double.tryParse(v.replaceAll(',', '.')) ?? 0;
                   _updateSet(set, weightKg: w);
                 },
               ),
@@ -556,11 +589,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               width: 50,
               child: TextField(
                 controller: c.rpe,
+                focusNode: f.rpe,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.rpe.selection = TextSelection(
                     baseOffset: 0, extentOffset: c.rpe.text.length),
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: '-',
                   contentPadding: EdgeInsets.zero,
@@ -718,6 +753,23 @@ class _SetControllers {
     required this.weight,
     required this.rpe,
   });
+
+  void dispose() {
+    reps.dispose();
+    weight.dispose();
+    rpe.dispose();
+  }
+}
+
+class _SetFocusNodes {
+  final FocusNode reps;
+  final FocusNode weight;
+  final FocusNode rpe;
+
+  _SetFocusNodes()
+      : reps = FocusNode(),
+        weight = FocusNode(),
+        rpe = FocusNode();
 
   void dispose() {
     reps.dispose();

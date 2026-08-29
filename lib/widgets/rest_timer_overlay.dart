@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:vibration/vibration.dart';
 import '../theme/app_theme.dart';
 
 class RestTimerOverlay extends StatefulWidget {
@@ -41,14 +41,13 @@ class _RestTimerOverlayState extends State<RestTimerOverlay> {
     }
     if (_seconds <= 0) {
       _running = false;
-      HapticFeedback.heavyImpact();
-      HapticFeedback.vibrate();
-      await Future.delayed(const Duration(milliseconds: 200));
-      HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 200));
-      HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 200));
-      HapticFeedback.heavyImpact();
+      Vibration.vibrate(duration: 500);
+      await Future.delayed(const Duration(milliseconds: 600));
+      Vibration.vibrate(duration: 500);
+      await Future.delayed(const Duration(milliseconds: 600));
+      Vibration.vibrate(duration: 500);
+      await Future.delayed(const Duration(milliseconds: 600));
+      Vibration.vibrate(duration: 500);
       widget.onClose();
     }
   }
