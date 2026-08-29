@@ -2,12 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
-import '../widgets/rest_timer_overlay.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
   final AppDatabase db;
@@ -29,7 +30,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   late Workout _workout;
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
-  bool _showRestTimer = false;
+  int _restSeconds = 0;
+  bool _restRunning = false;
+  Timer? _restTimer;
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
 
@@ -59,6 +62,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   @override
   void dispose() {
     _stopwatchTimer?.cancel();
+    _restTimer?.cancel();
     for (final c in _controllers.values) {
       c.dispose();
     }
@@ -66,6 +70,50 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       f.dispose();
     }
     super.dispose();
+  }
+
+  void _startRestTimer(int seconds) {
+    _restTimer?.cancel();
+    setState(() {
+      _restSeconds = seconds;
+      _restRunning = true;
+    });
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_restSeconds <= 0) {
+        _restTimer?.cancel();
+        _restRunning = false;
+        _vibrate();
+      } else {
+        setState(() => _restSeconds--);
+      }
+    });
+  }
+
+  void _cancelRestTimer() {
+    _restTimer?.cancel();
+    setState(() {
+      _restRunning = false;
+      _restSeconds = 0;
+    });
+  }
+
+  Future<void> _vibrate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dur = prefs.getInt('vib_duration') ?? 500;
+    final count = prefs.getInt('vib_count') ?? 4;
+    final gap = prefs.getInt('vib_gap') ?? 600;
+    for (int i = 0; i < count; i++) {
+      Vibration.vibrate(duration: dur);
+      if (i < count - 1) {
+        await Future.delayed(Duration(milliseconds: gap));
+      }
+    }
+  }
+
+  String _formatRestTime(int s) {
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
   _SetControllers _getControllers(WorkoutSet set) {
@@ -421,10 +469,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                           _buildExerciseCard(_exercises[i]),
                     ),
             ),
-            if (_showRestTimer)
-              RestTimerOverlay(
-                onClose: () => setState(() => _showRestTimer = false),
-              ),
             _buildBottomBar(),
           ],
         ),
@@ -675,13 +719,43 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             label: const Text('Übung'),
           ),
           const SizedBox(width: 8),
-          if (_exercises.any((e) => e.sets.isNotEmpty))
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() => _showRestTimer = !_showRestTimer);
-              },
-              icon: const Icon(Icons.pause, size: 18),
-              label: const Text('Rest'),
+          if (_restRunning)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.secondary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatRestTime(_restSeconds),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondary,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _cancelRestTimer,
+                    child: const Icon(Icons.close,
+                        size: 18, color: AppTheme.secondary),
+                  ),
+                ],
+              ),
+            )
+          else if (_exercises.any((e) => e.sets.isNotEmpty))
+            Wrap(
+              spacing: 6,
+              children: [
+                _buildRestChip(30),
+                _buildRestChip(60),
+                _buildRestChip(90),
+                _buildRestChip(120),
+              ],
             ),
           const Spacer(),
           if (_exercises.isEmpty)
@@ -716,6 +790,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRestChip(int seconds) {
+    return ActionChip(
+      label: Text('${seconds}s', style: const TextStyle(fontSize: 12)),
+      visualDensity: VisualDensity.compact,
+      onPressed: () => _startRestTimer(seconds),
     );
   }
 
