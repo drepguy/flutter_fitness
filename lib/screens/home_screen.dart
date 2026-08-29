@@ -472,34 +472,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteSelectedWorkouts() async {
-    final count = _selectedIds.length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$count ${count == 1 ? 'Training' : 'Trainings'} löschen?'),
-        content: const Text('Diese Aktion kann nicht rückgängig gemacht werden.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
-          ),
-        ],
+    final toDelete = _recentWorkouts
+        .where((w) => _selectedIds.contains(w.id))
+        .toList();
+
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${toDelete.length} Training gelöscht'),
+        action: SnackBarAction(
+          label: 'Rückgängig',
+          onPressed: () async {
+            for (final workout in toDelete) {
+              await widget.db.into(widget.db.workouts).insert(workout);
+            }
+            _loadData();
+          },
+        ),
+        duration: const Duration(seconds: 5),
       ),
     );
-    if (confirmed == true) {
+
+    for (final workout in toDelete) {
       await (widget.db.delete(widget.db.workouts)
-            ..where((w) => w.id.isIn(_selectedIds)))
+            ..where((w) => w.id.equals(workout.id)))
           .go();
-      setState(() {
-        _selectionMode = false;
-        _selectedIds.clear();
-      });
-      _loadData();
     }
+    _loadData();
   }
 }
