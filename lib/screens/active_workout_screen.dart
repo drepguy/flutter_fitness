@@ -400,7 +400,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             children: const [
               SizedBox(
                   width: 40,
-                  child: Text('Sat.',
+                  child: Text('Satz',
                       style: TextStyle(
                           color: AppTheme.muted,
                           fontSize: 12,
@@ -441,6 +441,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 40,
