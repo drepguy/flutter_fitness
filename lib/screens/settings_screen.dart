@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import '../database/app_database.dart';
@@ -106,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Einstellungen', style: GoogleFonts.orbitron(fontWeight: FontWeight.bold))),
+      appBar: AppBar(title: const Text('Einstellungen')),
       body: ListView(
         children: [
           _buildVibrationSection(),

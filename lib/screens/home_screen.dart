@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -111,9 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: _selectionMode
             ? Text('${_selectedIds.length} ausgewählt')
-            : Text('Flutter Fitness',
-                style: GoogleFonts.orbitron(
-                    fontWeight: FontWeight.bold, fontSize: 20)),
+            : const Text('Flutter Fitness'),
         leading: _selectionMode
             ? IconButton(
                 icon: const Icon(Icons.close),

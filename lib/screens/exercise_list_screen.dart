@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
@@ -99,7 +98,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Übungen', style: GoogleFonts.orbitron(fontWeight: FontWeight.bold))),
+      appBar: AppBar(title: const Text('Übungen')),
       body: Column(
         children: [
           Padding(
