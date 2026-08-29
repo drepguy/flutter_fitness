@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+import 'package:share_plus/share_plus.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/import_service.dart';
+import '../utils/export_service.dart';
 import 'active_workout_screen.dart';
 import 'gym_management_screen.dart';
 
@@ -79,6 +81,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _exportAndShare() async {
+    final service = ExportService(widget.db);
+    final text = await service.exportAsText();
+    await SharePlus.instance.share(
+      ShareParams(text: text, subject: 'UL Fitness Export'),
+    );
+  }
+
   Future<void> _loadData() async {
     final gyms = await widget.db.select(widget.db.gyms).get();
     final workouts = await (widget.db.select(widget.db.workouts)
@@ -110,6 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.upload_file),
             onPressed: () => _showImportDialog(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => _exportAndShare(),
           ),
           IconButton(
             icon: const Icon(Icons.settings),
