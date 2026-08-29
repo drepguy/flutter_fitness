@@ -40,22 +40,21 @@ class ImportService {
       final gymId = gymCache[section.gymName.toLowerCase()];
       if (gymId == null) continue;
 
-      int orderIdx = 0;
-
       for (final workout in section.workouts) {
-        final startedAt = DateTime(workout.year, workout.month, workout.day);
-        final endedAt = startedAt.add(const Duration(hours: 1, minutes: 30));
+        final startedAt = DateTime(workout.year, workout.month, workout.day, 17);
+        final workoutCreatedAt = now;
 
         final workoutId = await db.into(db.workouts).insert(
               WorkoutsCompanion.insert(
                 gymId: Value(gymId),
                 startedAt: startedAt,
-                endedAt: Value(endedAt),
-                createdAt: now,
+                endedAt: Value(startedAt.add(const Duration(hours: 1, minutes: 30))),
+                createdAt: workoutCreatedAt,
               ),
             );
 
-        orderIdx = 0;
+        int orderIdx = 0;
+        int setCounter = 0;
         for (final exLine in workout.exercises) {
           final cleanName = _cleanExerciseName(exLine.name);
           final exerciseId =
@@ -73,6 +72,8 @@ class ImportService {
 
           int setNo = 1;
           for (final set in exLine.sets) {
+            final setCreatedAt = startedAt.add(Duration(minutes: 3 * setCounter));
+            setCounter++;
             if (set.skipped) {
               await db.into(db.workoutSets).insert(
                     WorkoutSetsCompanion.insert(
@@ -83,7 +84,7 @@ class ImportService {
                       isWarmup: const Value(false),
                       isFailure: const Value(true),
                       note: const Value('Skipped'),
-                      createdAt: now,
+                      createdAt: setCreatedAt,
                     ),
                   );
             } else {
@@ -95,7 +96,7 @@ class ImportService {
                       weightKg: set.weight,
                       isWarmup: const Value(false),
                       isFailure: const Value(false),
-                      createdAt: now,
+                      createdAt: setCreatedAt,
                     ),
                   );
             }
