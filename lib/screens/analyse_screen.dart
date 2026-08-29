@@ -356,8 +356,11 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
             ),
           if (_selectedExercise != null) ...[
             const SizedBox(height: 24),
-            const Text('Persönliche Rekorde',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: const Text('Persönliche Rekorde',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
             const SizedBox(height: 8),
             FutureBuilder<Map<String, dynamic>>(
               future: _getPRs(),
@@ -401,8 +404,11 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
             ),
           ],
           const SizedBox(height: 24),
-          const Text('Dashboard',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: const Text('Dashboard',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
           const SizedBox(height: 8),
           FutureBuilder<Map<String, dynamic>>(
             future: _getDashboardStats(),
@@ -455,8 +461,11 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
             },
           ),
           const SizedBox(height: 24),
-          const Text('Monatliches Volumen',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: const Text('Monatliches Volumen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
           const SizedBox(height: 8),
           FutureBuilder<List<Map<String, dynamic>>>(
             future: _getMonthlyVolume(),

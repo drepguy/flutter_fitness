@@ -22,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Gym> _gyms = [];
   List<Workout> _recentWorkouts = [];
-  Map<int, List<WorkoutTemplate>> _templatesByGym = {};
 
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
@@ -100,18 +99,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ..limit(20))
         .get();
 
-    final templatesByGym = <int, List<WorkoutTemplate>>{};
-    for (final gym in gyms) {
-      final templates = await (widget.db.select(widget.db.workoutTemplates)
-            ..where((t) => t.gymId.equals(gym.id)))
-          .get();
-      templatesByGym[gym.id] = templates;
-    }
-
     setState(() {
       _gyms = gyms;
       _recentWorkouts = workouts;
-      _templatesByGym = templatesByGym;
     });
   }
 
@@ -183,54 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           children: [
-            const SizedBox(height: 8),
-            Text('Training starten',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
-            const SizedBox(height: 8),
             for (final gym in _gyms) _buildGymCard(gym),
             const SizedBox(height: 24),
-            if (_templatesByGym.isNotEmpty) ...[
-              Text('Vorlagen',
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text('Letzte Trainings',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       )),
-              const SizedBox(height: 8),
-              for (final gym in _gyms) ...[
-                if ((_templatesByGym[gym.id] ?? []).isNotEmpty) ...[
-                  Text(gym.name,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.muted,
-                          )),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final t in _templatesByGym[gym.id]!)
-                        ActionChip(
-                          label: Text(t.name),
-                          onPressed: () => _startWorkoutFromTemplate(gym, t),
-                        ),
-                      ActionChip(
-                        avatar: const Icon(Icons.add, size: 18),
-                        label: const Text('Neue Vorlage'),
-                        onPressed: () => _createTemplateFromLastWorkout(gym),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
-            ],
-            const SizedBox(height: 24),
-            Text('Letzte Trainings',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+            ),
             const SizedBox(height: 8),
             if (_recentWorkouts.isEmpty)
               Card(
@@ -424,91 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _startWorkoutFromTemplate(Gym gym, WorkoutTemplate template) async {
-    final now = DateTime.now();
-    final workoutId = await widget.db.into(widget.db.workouts).insert(
-          WorkoutsCompanion.insert(
-            gymId: Value(gym.id),
-            startedAt: now,
-            createdAt: now,
-          ),
-        );
-
-    final templateExercises = await (widget.db
-          .select(widget.db.workoutTemplateExercises)
-        ..where((t) => t.templateId.equals(template.id))
-        ..orderBy([(t) => OrderingTerm.asc(t.orderIdx)]))
-        .get();
-
-    for (final te in templateExercises) {
-      await widget.db.into(widget.db.workoutExercises).insert(
-            WorkoutExercisesCompanion.insert(
-              workoutId: workoutId,
-              exerciseId: te.exerciseId,
-              orderIdx: te.orderIdx,
-            ),
-          );
-    }
-
-    if (mounted) {
-      final workout = await (widget.db.select(widget.db.workouts)
-            ..where((w) => w.id.equals(workoutId)))
-          .getSingle();
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ActiveWorkoutScreen(
-            db: widget.db,
-            gym: gym,
-            workout: workout,
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _createTemplateFromLastWorkout(Gym gym) async {
-    final lastWorkout = await (widget.db.select(widget.db.workouts)
-          ..where((w) => w.gymId.equals(gym.id) & w.endedAt.isNotNull())
-          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
-          ..limit(1))
-        .getSingleOrNull();
-
-    if (lastWorkout == null) return;
-
-    final now = DateTime.now();
-    final name =
-        'Vorlage ${formatDate(now).substring(0, 5)} ${formatTime(now)}';
-
-    final templateId = await widget.db.into(widget.db.workoutTemplates).insert(
-          WorkoutTemplatesCompanion.insert(
-            gymId: gym.id,
-            name: name,
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-
-    final workoutExercises = await (widget.db
-          .select(widget.db.workoutExercises)
-        ..where((we) => we.workoutId.equals(lastWorkout.id))
-        ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
-        .get();
-
-    for (final we in workoutExercises) {
-      await widget.db
-          .into(widget.db.workoutTemplateExercises)
-          .insert(WorkoutTemplateExercisesCompanion.insert(
-            templateId: templateId,
-            exerciseId: we.exerciseId,
-            orderIdx: we.orderIdx,
-          ));
-    }
-
-    _loadData();
   }
 
   Future<void> _deleteSelectedWorkouts() async {
