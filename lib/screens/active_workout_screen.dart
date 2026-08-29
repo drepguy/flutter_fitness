@@ -476,7 +476,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 context: context,
                 builder: (_) => ExercisePickerDialog(
                   db: widget.db,
-                  gymId: widget.gym.id,
                 ),
               );
               if (exercise != null) _addExercise(exercise);

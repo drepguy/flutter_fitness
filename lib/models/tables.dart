@@ -10,7 +10,6 @@ class Gyms extends Table {
 
 class Exercises extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get gymId => integer().references(Gyms, #id, onDelete: KeyAction.setNull).nullable()();
   TextColumn get name => text().withLength(min: 1, max: 120)();
   TextColumn get category => text().withDefault(const Constant('Sonstiges'))();
   TextColumn get kind => text().withDefault(const Constant('free_weight'))();

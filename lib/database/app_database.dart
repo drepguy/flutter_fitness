@@ -22,11 +22,18 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
+          await m.createAll();
+          await _seedData();
+        },
+        onUpgrade: (m, from, to) async {
+          for (final table in allTables) {
+            await m.deleteTable(table.actualTableName);
+          }
           await m.createAll();
           await _seedData();
         },
@@ -48,11 +55,7 @@ class AppDatabase extends _$AppDatabase {
       ]);
     });
 
-    final gym1 = await (select(gyms)..where((g) => g.name.equals('Thomas Sport Center'))).getSingle();
-    final gym2 = await (select(gyms)..where((g) => g.name.equals('All Inclusive Fitness'))).getSingle();
-
     final exercisesData = [
-      // Beine
       _ExerciseSeed('Hackenschmidt', 'Beine', 'free_weight', 'leg_press', ['Hackschmitt', 'Hack Squat']),
       _ExerciseSeed('Hip Thrust Machine', 'Beine', 'machine', 'leg_press', []),
       _ExerciseSeed('Beinpresse horizontal', 'Beine', 'machine', 'leg_press', ['Beinpresse']),
@@ -64,36 +67,27 @@ class AppDatabase extends _$AppDatabase {
       _ExerciseSeed('Beinbeuger', 'Beine', 'machine', 'leg_press', []),
       _ExerciseSeed('Beinbeuger liegend', 'Beine', 'machine', 'leg_press', []),
       _ExerciseSeed('Wadenmaschine', 'Beine', 'machine', 'leg_press', []),
-      // Push - Brust
       _ExerciseSeed('Brustpresse', 'Brust', 'machine', 'bench', ['Brust']),
       _ExerciseSeed('Brustfly', 'Brust', 'machine', 'bench', ['Chest fly']),
-      // Push - Schulter
       _ExerciseSeed('Schulterpresse', 'Schulter', 'machine', 'dumbbell', []),
       _ExerciseSeed('Seitheben', 'Schulter', 'cable', 'dumbbell', []),
-      // Push - Arme
       _ExerciseSeed('Trizeps Skull Crush', 'Arme', 'free_weight', 'dumbbell', ['Skullcrusher']),
       _ExerciseSeed('Trizeps Kabelzug', 'Arme', 'cable', 'cable', []),
-      // Pull - Rücken
       _ExerciseSeed('Latzug', 'Rücken', 'machine', 'pull_up', []),
       _ExerciseSeed('Rudern', 'Rücken', 'machine', 'cable', []),
       _ExerciseSeed('Rudern Brustgestützt', 'Rücken', 'machine', 'cable', []),
-      // Pull - Schulter
       _ExerciseSeed('Face Pulls', 'Schulter', 'cable', 'cable', []),
-      // Pull - Arme
       _ExerciseSeed('Bizeps Hammer Curls', 'Arme', 'free_weight', 'dumbbell', []),
       _ExerciseSeed('Bizeps Kabelzug', 'Arme', 'cable', 'cable', []),
-      // Core
       _ExerciseSeed('Hyperextension', 'Core', 'machine', 'bench', []),
       _ExerciseSeed('Bauch', 'Core', 'machine', 'dumbbell', []),
       _ExerciseSeed('Bauchmaschine', 'Core', 'machine', 'dumbbell', []),
-      // Unterarme
       _ExerciseSeed('Unterarm-Innencurls', 'Unterarme', 'free_weight', 'dumbbell', []),
       _ExerciseSeed('Unterarm-Außencurls', 'Unterarme', 'free_weight', 'dumbbell', []),
     ];
 
     for (final ex in exercisesData) {
-      final id1 = await into(exercises).insert(ExercisesCompanion.insert(
-        gymId: Value(gym1.id),
+      final id = await into(exercises).insert(ExercisesCompanion.insert(
         name: ex.name,
         category: Value(ex.category),
         kind: Value(ex.kind),
@@ -102,23 +96,7 @@ class AppDatabase extends _$AppDatabase {
       ));
       for (final alias in ex.aliases) {
         await into(exerciseAliases).insert(ExerciseAliasesCompanion.insert(
-          exerciseId: id1,
-          alias: alias,
-          createdAt: now,
-        ));
-      }
-
-      final id2 = await into(exercises).insert(ExercisesCompanion.insert(
-        gymId: Value(gym2.id),
-        name: ex.name,
-        category: Value(ex.category),
-        kind: Value(ex.kind),
-        iconKey: Value(ex.iconKey),
-        createdAt: now,
-      ));
-      for (final alias in ex.aliases) {
-        await into(exerciseAliases).insert(ExerciseAliasesCompanion.insert(
-          exerciseId: id2,
+          exerciseId: id,
           alias: alias,
           createdAt: now,
         ));

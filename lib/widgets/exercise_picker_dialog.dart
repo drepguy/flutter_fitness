@@ -5,9 +5,8 @@ import '../theme/app_theme.dart';
 
 class ExercisePickerDialog extends StatefulWidget {
   final AppDatabase db;
-  final int? gymId;
 
-  const ExercisePickerDialog({super.key, required this.db, this.gymId});
+  const ExercisePickerDialog({super.key, required this.db});
 
   @override
   State<ExercisePickerDialog> createState() => _ExercisePickerDialogState();
@@ -28,10 +27,6 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
       leftOuterJoin(widget.db.exerciseAliases,
           widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id)),
     ]);
-
-    if (widget.gymId != null) {
-      query.where(widget.db.exercises.gymId.equals(widget.gymId!));
-    }
 
     if (_search.isNotEmpty) {
       query.where(

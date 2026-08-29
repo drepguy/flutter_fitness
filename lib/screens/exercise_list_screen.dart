@@ -15,21 +15,13 @@ class ExerciseListScreen extends StatefulWidget {
 }
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
-  List<Gym> _gyms = [];
-  int? _selectedGymId;
   String _search = '';
   List<_ExerciseWithAliases> _exercises = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final gyms = await widget.db.select(widget.db.gyms).get();
-    await _loadExercises();
-    setState(() => _gyms = gyms);
+    _loadExercises();
   }
 
   Future<void> _loadExercises() async {
@@ -37,10 +29,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       leftOuterJoin(widget.db.exerciseAliases,
           widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id)),
     ]);
-
-    if (_selectedGymId != null) {
-      query.where(widget.db.exercises.gymId.equals(_selectedGymId!));
-    }
 
     if (_search.isNotEmpty) {
       query.where(
@@ -65,20 +53,9 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   }
 
   Future<void> _addExercise() async {
-    if (_selectedGymId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte zuerst ein Studio auswählen')),
-        );
-      }
-      return;
-    }
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => ExerciseEditDialog(
-        db: widget.db,
-        gymId: _selectedGymId!,
-      ),
+      builder: (_) => ExerciseEditDialog(db: widget.db),
     );
     if (result == true) _loadExercises();
   }
@@ -86,11 +63,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   Future<void> _editExercise(Exercise ex) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => ExerciseEditDialog(
-        db: widget.db,
-        exercise: ex,
-        gymId: ex.gymId ?? _selectedGymId!,
-      ),
+      builder: (_) => ExerciseEditDialog(db: widget.db, exercise: ex),
     );
     if (result == true) _loadExercises();
   }
@@ -128,26 +101,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       appBar: AppBar(title: const Text('Übungen verwalten')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: DropdownButtonFormField<int?>(
-              initialValue: _selectedGymId,
-              decoration: const InputDecoration(
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              items: [
-                const DropdownMenuItem(
-                    value: null, child: Text('Alle Studios')),
-                for (final g in _gyms)
-                  DropdownMenuItem(value: g.id, child: Text(g.name)),
-              ],
-              onChanged: (v) {
-                setState(() => _selectedGymId = v);
-                _loadExercises();
-              },
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: TextField(

@@ -6,13 +6,11 @@ import '../utils/constants.dart';
 class ExerciseEditDialog extends StatefulWidget {
   final AppDatabase db;
   final Exercise? exercise;
-  final int gymId;
 
   const ExerciseEditDialog({
     super.key,
     required this.db,
     this.exercise,
-    required this.gymId,
   });
 
   @override
@@ -62,7 +60,6 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
     } else {
       final id = await widget.db.into(widget.db.exercises).insert(
             ExercisesCompanion.insert(
-              gymId: Value(widget.gymId),
               name: _nameController.text.trim(),
               category: Value(_category),
               kind: Value(_kind),

@@ -47,7 +47,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               w.startedAt.isBiggerOrEqualValue(_fromDate) &
               (_selectedGymId != null
                   ? w.gymId.equals(_selectedGymId!)
-                  : w.gymId.equals(_selectedExercise!.gymId ?? 0)))
+                  : const Constant(true)))
         ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
         .get();
 
@@ -106,7 +106,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
           widget.db.workouts.endedAt.isNotNull() &
           (_selectedGymId != null
               ? widget.db.workouts.gymId.equals(_selectedGymId!)
-              : widget.db.workouts.gymId.equals(_selectedExercise!.gymId ?? 0)));
+              : const Constant(true)));
 
     final results = await query.get();
 
@@ -298,7 +298,6 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                 context: context,
                 builder: (_) => ExercisePickerDialog(
                   db: widget.db,
-                  gymId: _selectedGymId,
                 ),
               );
               if (ex != null) setState(() => _selectedExercise = ex);

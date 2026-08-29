@@ -367,18 +367,6 @@ class $ExercisesTable extends Exercises
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _gymIdMeta = const VerificationMeta('gymId');
-  @override
-  late final GeneratedColumn<int> gymId = GeneratedColumn<int>(
-    'gym_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES gyms (id) ON DELETE SET NULL',
-    ),
-  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -455,7 +443,6 @@ class $ExercisesTable extends Exercises
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    gymId,
     name,
     category,
     kind,
@@ -477,12 +464,6 @@ class $ExercisesTable extends Exercises
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('gym_id')) {
-      context.handle(
-        _gymIdMeta,
-        gymId.isAcceptableOrUnknown(data['gym_id']!, _gymIdMeta),
-      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -537,10 +518,6 @@ class $ExercisesTable extends Exercises
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      gymId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}gym_id'],
-      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -576,7 +553,6 @@ class $ExercisesTable extends Exercises
 
 class Exercise extends DataClass implements Insertable<Exercise> {
   final int id;
-  final int? gymId;
   final String name;
   final String category;
   final String kind;
@@ -585,7 +561,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final DateTime createdAt;
   const Exercise({
     required this.id,
-    this.gymId,
     required this.name,
     required this.category,
     required this.kind,
@@ -597,9 +572,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    if (!nullToAbsent || gymId != null) {
-      map['gym_id'] = Variable<int>(gymId);
-    }
     map['name'] = Variable<String>(name);
     map['category'] = Variable<String>(category);
     map['kind'] = Variable<String>(kind);
@@ -612,9 +584,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   ExercisesCompanion toCompanion(bool nullToAbsent) {
     return ExercisesCompanion(
       id: Value(id),
-      gymId: gymId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(gymId),
       name: Value(name),
       category: Value(category),
       kind: Value(kind),
@@ -631,7 +600,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Exercise(
       id: serializer.fromJson<int>(json['id']),
-      gymId: serializer.fromJson<int?>(json['gymId']),
       name: serializer.fromJson<String>(json['name']),
       category: serializer.fromJson<String>(json['category']),
       kind: serializer.fromJson<String>(json['kind']),
@@ -645,7 +613,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'gymId': serializer.toJson<int?>(gymId),
       'name': serializer.toJson<String>(name),
       'category': serializer.toJson<String>(category),
       'kind': serializer.toJson<String>(kind),
@@ -657,7 +624,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
 
   Exercise copyWith({
     int? id,
-    Value<int?> gymId = const Value.absent(),
     String? name,
     String? category,
     String? kind,
@@ -666,7 +632,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     DateTime? createdAt,
   }) => Exercise(
     id: id ?? this.id,
-    gymId: gymId.present ? gymId.value : this.gymId,
     name: name ?? this.name,
     category: category ?? this.category,
     kind: kind ?? this.kind,
@@ -677,7 +642,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
       id: data.id.present ? data.id.value : this.id,
-      gymId: data.gymId.present ? data.gymId.value : this.gymId,
       name: data.name.present ? data.name.value : this.name,
       category: data.category.present ? data.category.value : this.category,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -691,7 +655,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   String toString() {
     return (StringBuffer('Exercise(')
           ..write('id: $id, ')
-          ..write('gymId: $gymId, ')
           ..write('name: $name, ')
           ..write('category: $category, ')
           ..write('kind: $kind, ')
@@ -703,22 +666,13 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    gymId,
-    name,
-    category,
-    kind,
-    iconKey,
-    isSystem,
-    createdAt,
-  );
+  int get hashCode =>
+      Object.hash(id, name, category, kind, iconKey, isSystem, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Exercise &&
           other.id == this.id &&
-          other.gymId == this.gymId &&
           other.name == this.name &&
           other.category == this.category &&
           other.kind == this.kind &&
@@ -729,7 +683,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<int> id;
-  final Value<int?> gymId;
   final Value<String> name;
   final Value<String> category;
   final Value<String> kind;
@@ -738,7 +691,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<DateTime> createdAt;
   const ExercisesCompanion({
     this.id = const Value.absent(),
-    this.gymId = const Value.absent(),
     this.name = const Value.absent(),
     this.category = const Value.absent(),
     this.kind = const Value.absent(),
@@ -748,7 +700,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   });
   ExercisesCompanion.insert({
     this.id = const Value.absent(),
-    this.gymId = const Value.absent(),
     required String name,
     this.category = const Value.absent(),
     this.kind = const Value.absent(),
@@ -759,7 +710,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
        createdAt = Value(createdAt);
   static Insertable<Exercise> custom({
     Expression<int>? id,
-    Expression<int>? gymId,
     Expression<String>? name,
     Expression<String>? category,
     Expression<String>? kind,
@@ -769,7 +719,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (gymId != null) 'gym_id': gymId,
       if (name != null) 'name': name,
       if (category != null) 'category': category,
       if (kind != null) 'kind': kind,
@@ -781,7 +730,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
 
   ExercisesCompanion copyWith({
     Value<int>? id,
-    Value<int?>? gymId,
     Value<String>? name,
     Value<String>? category,
     Value<String>? kind,
@@ -791,7 +739,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   }) {
     return ExercisesCompanion(
       id: id ?? this.id,
-      gymId: gymId ?? this.gymId,
       name: name ?? this.name,
       category: category ?? this.category,
       kind: kind ?? this.kind,
@@ -806,9 +753,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
-    }
-    if (gymId.present) {
-      map['gym_id'] = Variable<int>(gymId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -835,7 +779,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   String toString() {
     return (StringBuffer('ExercisesCompanion(')
           ..write('id: $id, ')
-          ..write('gymId: $gymId, ')
           ..write('name: $name, ')
           ..write('category: $category, ')
           ..write('kind: $kind, ')
@@ -3171,13 +3114,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
       on: TableUpdateQuery.onTableName(
-        'gyms',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('exercises', kind: UpdateKind.update)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
         'exercises',
         limitUpdateKind: UpdateKind.delete,
       ),
@@ -3234,24 +3170,6 @@ typedef $$GymsTableUpdateCompanionBuilder = GymsCompanion Function({
 final class $$GymsTableReferences
     extends BaseReferences<_$AppDatabase, $GymsTable, Gym> {
   $$GymsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$ExercisesTable, List<Exercise>>
-  _exercisesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.exercises,
-    aliasName: 'gyms__id__exercises__gym_id',
-  );
-
-  $$ExercisesTableProcessedTableManager get exercisesRefs {
-    final manager = $$ExercisesTableTableManager(
-      $_db,
-      $_db.exercises,
-    ).filter((f) => f.gymId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_exercisesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
 
   static MultiTypedResultKey<$WorkoutsTable, List<Workout>> _workoutsRefsTable(
     _$AppDatabase db,
@@ -3325,31 +3243,6 @@ class $$GymsTableFilterComposer extends Composer<_$AppDatabase, $GymsTable> {
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> exercisesRefs(
-    Expression<bool> Function($$ExercisesTableFilterComposer f) f,
-  ) {
-    final $$ExercisesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exercises,
-      getReferencedColumn: (t) => t.gymId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExercisesTableFilterComposer(
-            $db: $db,
-            $table: $db.exercises,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 
   Expression<bool> workoutsRefs(
     Expression<bool> Function($$WorkoutsTableFilterComposer f) f,
@@ -3460,31 +3353,6 @@ class $$GymsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  Expression<T> exercisesRefs<T extends Object>(
-    Expression<T> Function($$ExercisesTableAnnotationComposer a) f,
-  ) {
-    final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exercises,
-      getReferencedColumn: (t) => t.gymId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExercisesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.exercises,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> workoutsRefs<T extends Object>(
     Expression<T> Function($$WorkoutsTableAnnotationComposer a) f,
   ) {
@@ -3549,11 +3417,7 @@ class $$GymsTableTableManager
           $$GymsTableUpdateCompanionBuilder,
           (Gym, $$GymsTableReferences),
           Gym,
-          PrefetchHooks Function({
-            bool exercisesRefs,
-            bool workoutsRefs,
-            bool workoutTemplatesRefs,
-          })
+          PrefetchHooks Function({bool workoutsRefs, bool workoutTemplatesRefs})
         > {
   $$GymsTableTableManager(_$AppDatabase db, $GymsTable table)
     : super(
@@ -3601,37 +3465,16 @@ class $$GymsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({
-                exercisesRefs = false,
-                workoutsRefs = false,
-                workoutTemplatesRefs = false,
-              }) {
+              ({workoutsRefs = false, workoutTemplatesRefs = false}) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (exercisesRefs) db.exercises,
                     if (workoutsRefs) db.workouts,
                     if (workoutTemplatesRefs) db.workoutTemplates,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (exercisesRefs)
-                        await $_getPrefetchedData<Gym, $GymsTable, Exercise>(
-                          currentTable: table,
-                          referencedTable: $$GymsTableReferences
-                              ._exercisesRefsTable(db),
-                          managerFromTypedResult: (p0) => $$GymsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).exercisesRefs,
-                          referencedItemsForCurrentItem: (
-                            item,
-                            referencedItems,
-                          ) => referencedItems.where((e) => e.gymId == item.id),
-                          typedResults: items,
-                        ),
                       if (workoutsRefs)
                         await $_getPrefetchedData<Gym, $GymsTable, Workout>(
                           currentTable: table,
@@ -3685,15 +3528,10 @@ typedef $$GymsTableProcessedTableManager =
       $$GymsTableUpdateCompanionBuilder,
       (Gym, $$GymsTableReferences),
       Gym,
-      PrefetchHooks Function({
-        bool exercisesRefs,
-        bool workoutsRefs,
-        bool workoutTemplatesRefs,
-      })
+      PrefetchHooks Function({bool workoutsRefs, bool workoutTemplatesRefs})
     >;
 typedef $$ExercisesTableCreateCompanionBuilder = ExercisesCompanion Function({
   Value<int> id,
-  Value<int?> gymId,
   required String name,
   Value<String> category,
   Value<String> kind,
@@ -3703,7 +3541,6 @@ typedef $$ExercisesTableCreateCompanionBuilder = ExercisesCompanion Function({
 });
 typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
   Value<int> id,
-  Value<int?> gymId,
   Value<String> name,
   Value<String> category,
   Value<String> kind,
@@ -3715,23 +3552,6 @@ typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
 final class $$ExercisesTableReferences
     extends BaseReferences<_$AppDatabase, $ExercisesTable, Exercise> {
   $$ExercisesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $GymsTable _gymIdTable(_$AppDatabase db) =>
-      db.gyms.createAlias('exercises__gym_id__gyms__id');
-
-  $$GymsTableProcessedTableManager? get gymId {
-    final $_column = $_itemColumn<int>('gym_id');
-    if ($_column == null) return null;
-    final manager = $$GymsTableTableManager(
-      $_db,
-      $_db.gyms,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_gymIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
 
   static MultiTypedResultKey<$ExerciseAliasesTable, List<ExerciseAliase>>
   _exerciseAliasesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -3842,29 +3662,6 @@ class $$ExercisesTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$GymsTableFilterComposer get gymId {
-    final $$GymsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.gymId,
-      referencedTable: $db.gyms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GymsTableFilterComposer(
-            $db: $db,
-            $table: $db.gyms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 
   Expression<bool> exerciseAliasesRefs(
     Expression<bool> Function($$ExerciseAliasesTableFilterComposer f) f,
@@ -3987,29 +3784,6 @@ class $$ExercisesTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$GymsTableOrderingComposer get gymId {
-    final $$GymsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.gymId,
-      referencedTable: $db.gyms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GymsTableOrderingComposer(
-            $db: $db,
-            $table: $db.gyms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -4041,29 +3815,6 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  $$GymsTableAnnotationComposer get gymId {
-    final $$GymsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.gymId,
-      referencedTable: $db.gyms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GymsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.gyms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 
   Expression<T> exerciseAliasesRefs<T extends Object>(
     Expression<T> Function($$ExerciseAliasesTableAnnotationComposer a) f,
@@ -4157,7 +3908,6 @@ class $$ExercisesTableTableManager
           (Exercise, $$ExercisesTableReferences),
           Exercise,
           PrefetchHooks Function({
-            bool gymId,
             bool exerciseAliasesRefs,
             bool workoutExercisesRefs,
             bool workoutTemplateExercisesRefs,
@@ -4177,7 +3927,6 @@ class $$ExercisesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int?> gymId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String> kind = const Value.absent(),
@@ -4186,7 +3935,6 @@ class $$ExercisesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
-                gymId: gymId,
                 name: name,
                 category: category,
                 kind: kind,
@@ -4197,7 +3945,6 @@ class $$ExercisesTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int?> gymId = const Value.absent(),
                 required String name,
                 Value<String> category = const Value.absent(),
                 Value<String> kind = const Value.absent(),
@@ -4206,7 +3953,6 @@ class $$ExercisesTableTableManager
                 required DateTime createdAt,
               }) => ExercisesCompanion.insert(
                 id: id,
-                gymId: gymId,
                 name: name,
                 category: category,
                 kind: kind,
@@ -4224,7 +3970,6 @@ class $$ExercisesTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
-                gymId = false,
                 exerciseAliasesRefs = false,
                 workoutExercisesRefs = false,
                 workoutTemplateExercisesRefs = false,
@@ -4237,36 +3982,7 @@ class $$ExercisesTableTableManager
                     if (workoutTemplateExercisesRefs)
                       db.workoutTemplateExercises,
                   ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (gymId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.gymId,
-                            referencedTable: $$ExercisesTableReferences
-                                ._gymIdTable(db),
-                            referencedColumn: $$ExercisesTableReferences
-                                ._gymIdTable(db)
-                                .id,
-                          ) as T;
-                        }
-
-                        return state;
-                      },
+                  addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (exerciseAliasesRefs)
@@ -4353,7 +4069,6 @@ typedef $$ExercisesTableProcessedTableManager =
       (Exercise, $$ExercisesTableReferences),
       Exercise,
       PrefetchHooks Function({
-        bool gymId,
         bool exerciseAliasesRefs,
         bool workoutExercisesRefs,
         bool workoutTemplateExercisesRefs,
