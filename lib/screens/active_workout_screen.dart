@@ -445,10 +445,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         children: [
           SizedBox(
             width: 40,
-            child: Text(
-              '${set.setNo}',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: AppTheme.primary),
+            height: 36,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${set.setNo}',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: AppTheme.primary),
+              ),
             ),
           ),
           Expanded(
@@ -517,6 +521,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ),
           SizedBox(
             width: 32,
+            height: 36,
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
