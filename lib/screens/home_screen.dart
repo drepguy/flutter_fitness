@@ -187,17 +187,15 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const SizedBox(height: 8),
             Text('Training starten',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                style: GoogleFonts.orbitron(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             for (final gym in _gyms) _buildGymCard(gym),
             const SizedBox(height: 24),
             if (_templatesByGym.isNotEmpty) ...[
               Text('Vorlagen',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      )),
+                  style: GoogleFonts.orbitron(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               for (final gym in _gyms) ...[
                 if ((_templatesByGym[gym.id] ?? []).isNotEmpty) ...[
@@ -228,9 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
             const SizedBox(height: 24),
             Text('Letzte Trainings',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                style: GoogleFonts.orbitron(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             if (_recentWorkouts.isEmpty)
               Card(
