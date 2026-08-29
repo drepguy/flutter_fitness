@@ -7,7 +7,7 @@ import '../utils/formatters.dart';
 import '../utils/import_service.dart';
 import '../utils/export_service.dart';
 import 'active_workout_screen.dart';
-import 'gym_management_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final AppDatabase db;
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => GymManagementScreen(db: widget.db),
+                  builder: (_) => SettingsScreen(db: widget.db),
                 ),
               );
               _loadData();

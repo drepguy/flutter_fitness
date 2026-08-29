@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import '../theme/app_theme.dart';
 
@@ -41,13 +42,16 @@ class _RestTimerOverlayState extends State<RestTimerOverlay> {
     }
     if (_seconds <= 0) {
       _running = false;
-      Vibration.vibrate(duration: 500);
-      await Future.delayed(const Duration(milliseconds: 600));
-      Vibration.vibrate(duration: 500);
-      await Future.delayed(const Duration(milliseconds: 600));
-      Vibration.vibrate(duration: 500);
-      await Future.delayed(const Duration(milliseconds: 600));
-      Vibration.vibrate(duration: 500);
+      final prefs = await SharedPreferences.getInstance();
+      final dur = prefs.getInt('vib_duration') ?? 500;
+      final count = prefs.getInt('vib_count') ?? 4;
+      final gap = prefs.getInt('vib_gap') ?? 600;
+      for (int i = 0; i < count; i++) {
+        Vibration.vibrate(duration: dur);
+        if (i < count - 1) {
+          await Future.delayed(Duration(milliseconds: gap));
+        }
+      }
       widget.onClose();
     }
   }
