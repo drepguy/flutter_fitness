@@ -77,7 +77,27 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   _SetFocusNodes _getFocusNodes(WorkoutSet set) {
-    return _focusNodes.putIfAbsent(set.id, () => _SetFocusNodes());
+    final fn = _focusNodes.putIfAbsent(set.id, () => _SetFocusNodes());
+    final c = _getControllers(set);
+    fn.reps.addListener(() {
+      if (fn.reps.hasFocus) {
+        c.reps.selection = TextSelection(
+            baseOffset: 0, extentOffset: c.reps.text.length);
+      }
+    });
+    fn.weight.addListener(() {
+      if (fn.weight.hasFocus) {
+        c.weight.selection = TextSelection(
+            baseOffset: 0, extentOffset: c.weight.text.length);
+      }
+    });
+    fn.rpe.addListener(() {
+      if (fn.rpe.hasFocus) {
+        c.rpe.selection = TextSelection(
+            baseOffset: 0, extentOffset: c.rpe.text.length);
+      }
+    });
+    return fn;
   }
 
   void _startStopwatch() {
