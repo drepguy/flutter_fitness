@@ -705,89 +705,123 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Widget _buildBottomBar() {
+    final totalSets = _exercises.fold(0, (sum, e) => sum + e.sets.length);
+    final totalVolume = _exercises.fold(0.0, (sum, e) {
+      return sum + e.sets.fold(0.0, (s, set) => s + set.weightKg * set.reps);
+    });
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: AppTheme.surfaceContainerHigh,
         boxShadow: [BoxShadow(blurRadius: 8, color: Colors.black26)],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          OutlinedButton.icon(
-            onPressed: _showExercisePicker,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Übung'),
-          ),
-          const SizedBox(width: 8),
-          if (_restRunning)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.secondary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
+          if (_exercises.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _formatRestTime(_restSeconds),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.secondary,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _cancelRestTimer,
-                    child: const Icon(Icons.close,
-                        size: 18, color: AppTheme.secondary),
-                  ),
+                  Text('$totalSets Sätze',
+                      style: const TextStyle(
+                          color: AppTheme.muted, fontSize: 12)),
+                  const SizedBox(width: 16),
+                  Text('${formatVolume(totalVolume)} kg',
+                      style: const TextStyle(
+                          color: AppTheme.muted, fontSize: 12)),
+                  const SizedBox(width: 16),
+                  Text('${_exercises.length} Übungen',
+                      style: const TextStyle(
+                          color: AppTheme.muted, fontSize: 12)),
                 ],
               ),
-            )
-          else if (_exercises.any((e) => e.sets.isNotEmpty))
-            Wrap(
-              spacing: 6,
-              children: [
-                _buildRestChip(30),
-                _buildRestChip(60),
-                _buildRestChip(90),
-                _buildRestChip(120),
-              ],
             ),
-          const Spacer(),
-          if (_exercises.isEmpty)
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-              onPressed: () => _showCancelDialog(),
-              child: const Text('Abbrechen'),
-            )
-          else
-            ElevatedButton(
-              onPressed: _saving
-                  ? null
-                  : () async {
-                      final result = await showDialog<Map<String, dynamic>>(
-                        context: context,
-                        builder: (_) => FinishDialog(
-                          exerciseCount: _exercises.length,
-                          setCount: _exercises.fold(
-                              0, (sum, e) => sum + e.sets.length),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _showExercisePicker,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Übung'),
+              ),
+              const SizedBox(width: 8),
+              if (_restRunning)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatRestTime(_restSeconds),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.secondary,
+                          fontFeatures: [FontFeature.tabularFigures()],
                         ),
-                      );
-                      if (result != null) {
-                        _finishWorkout(result['notes'] as String?);
-                      }
-                    },
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Fertig'),
-            ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _cancelRestTimer,
+                        child: const Icon(Icons.close,
+                            size: 18, color: AppTheme.secondary),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_exercises.any((e) => e.sets.isNotEmpty))
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    _buildRestChip(30),
+                    _buildRestChip(60),
+                    _buildRestChip(90),
+                    _buildRestChip(120),
+                  ],
+                ),
+              const Spacer(),
+              if (_exercises.isEmpty)
+                ElevatedButton(
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+                  onPressed: () => _showCancelDialog(),
+                  child: const Text('Abbrechen'),
+                )
+              else
+                ElevatedButton(
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          final result =
+                              await showDialog<Map<String, dynamic>>(
+                            context: context,
+                            builder: (_) => FinishDialog(
+                              exerciseCount: _exercises.length,
+                              setCount: _exercises.fold(
+                                  0, (sum, e) => sum + e.sets.length),
+                            ),
+                          );
+                          if (result != null) {
+                            _finishWorkout(result['notes'] as String?);
+                          }
+                        },
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child:
+                              CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Fertig'),
+                ),
+            ],
+          ),
         ],
       ),
     );
