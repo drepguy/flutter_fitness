@@ -30,6 +30,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   bool _showRestTimer = false;
   final Map<int, _SetControllers> _controllers = {};
 
+  static final _setBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(4),
+    borderSide: const BorderSide(color: AppTheme.muted, width: 1),
+  );
+  static final _setBorderFocused = _setBorder.copyWith(
+    borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -439,9 +447,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Widget _buildSetRow(WorkoutSet set, _ActiveExercise ae) {
     final c = _getControllers(set);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.zero,
       child: SizedBox(
-        height: 36,
+        height: 44,
         child: Row(
           children: [
             SizedBox(
@@ -458,9 +466,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14),
-                decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                  isDense: true,
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.zero,
+                  isCollapsed: true,
+                  border: _setBorder,
+                  enabledBorder: _setBorder,
+                  focusedBorder: _setBorderFocused,
                 ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (v) {
@@ -477,9 +488,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14),
-                decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                  isDense: true,
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.zero,
+                  isCollapsed: true,
+                  border: _setBorder,
+                  enabledBorder: _setBorder,
+                  focusedBorder: _setBorderFocused,
                 ),
                 onChanged: (v) {
                   final w = double.tryParse(v) ?? 0;
@@ -495,10 +509,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '-',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 4),
-                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  isCollapsed: true,
+                  border: _setBorder,
+                  enabledBorder: _setBorder,
+                  focusedBorder: _setBorderFocused,
                 ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (v) {
