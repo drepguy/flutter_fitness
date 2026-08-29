@@ -440,24 +440,19 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final c = _getControllers(set);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 40,
-            height: 36,
-            child: Align(
-              alignment: Alignment.centerLeft,
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
               child: Text(
                 '${set.setNo}',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, color: AppTheme.primary),
               ),
             ),
-          ),
-          Expanded(
-            child: SizedBox(
-              height: 36,
+            Expanded(
               child: TextField(
                 controller: c.reps,
                 keyboardType: TextInputType.number,
@@ -474,11 +469,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 },
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 36,
+            const SizedBox(width: 8),
+            Expanded(
               child: TextField(
                 controller: c.weight,
                 keyboardType:
@@ -495,12 +487,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 },
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 50,
-            child: SizedBox(
-              height: 36,
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 50,
               child: TextField(
                 controller: c.rpe,
                 keyboardType: TextInputType.number,
@@ -518,17 +507,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 },
               ),
             ),
-          ),
-          SizedBox(
-            width: 32,
-            height: 36,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
-              onPressed: () => _deleteSet(set, ae),
+            SizedBox(
+              width: 32,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
+                onPressed: () => _deleteSet(set, ae),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
