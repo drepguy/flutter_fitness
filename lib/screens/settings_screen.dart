@@ -20,12 +20,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _vibDuration = 500;
   int _vibCount = 4;
   int _vibGap = 600;
+  List<int> _restPresets = [30, 60, 90, 120];
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _loadVibrationSettings();
+    _loadRestPresets();
   }
 
   Future<void> _loadData() async {
@@ -40,6 +42,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _vibCount = prefs.getInt('vib_count') ?? 4;
       _vibGap = prefs.getInt('vib_gap') ?? 600;
     });
+  }
+
+  Future<void> _loadRestPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final presets = prefs.getStringList('rest_presets');
+    if (presets != null && presets.length == 4) {
+      setState(() {
+        _restPresets = presets.map(int.parse).toList();
+      });
+    }
+  }
+
+  Future<void> _saveRestPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+        'rest_presets', _restPresets.map((e) => e.toString()).toList());
   }
 
   Future<void> _saveVibrationSettings() async {
@@ -108,6 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('Einstellungen')),
       body: ListView(
         children: [
+          _buildRestTimerSection(),
+          const Divider(height: 1),
           _buildVibrationSection(),
           const Divider(height: 1),
           _buildGymSection(),
@@ -180,6 +200,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('Standard'),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRestTimerSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.timer, color: AppTheme.primary),
+              SizedBox(width: 8),
+              Text('Rest Timer Presets',
+                  style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (int i = 0; i < 4; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    initialValue: '${_restPresets[i]}',
+                    style: const TextStyle(fontSize: 16),
+                    decoration: const InputDecoration(
+                      suffixText: 's',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    ),
+                    onChanged: (v) {
+                      final val = int.tryParse(v);
+                      if (val != null && val > 0) {
+                        _restPresets[i] = val;
+                        _saveRestPresets();
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '4 Werte in Sekunden. Werden im Training als Quick-Start angezeigt.',
+            style: TextStyle(color: AppTheme.muted, fontSize: 12),
           ),
         ],
       ),

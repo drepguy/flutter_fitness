@@ -35,6 +35,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Timer? _restTimer;
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
+  List<int> _restPresets = [30, 60, 90, 120];
 
   Timer? _stopwatchTimer;
   int _elapsedSeconds = 0;
@@ -50,12 +51,23 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    _loadRestPresets();
     if (widget.workout != null) {
       _workout = widget.workout!;
       _startStopwatch();
       _loadExercises();
     } else {
       _createWorkout();
+    }
+  }
+
+  Future<void> _loadRestPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final presets = prefs.getStringList('rest_presets');
+    if (presets != null && presets.length == 4) {
+      setState(() {
+        _restPresets = presets.map(int.parse).toList();
+      });
     }
   }
 
@@ -739,6 +751,51 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 ],
               ),
             ),
+          if (_restRunning)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _formatRestTime(_restSeconds),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.secondary,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _cancelRestTimer,
+                      child: const Icon(Icons.close,
+                          size: 20, color: AppTheme.secondary),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_exercises.any((e) => e.sets.isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (int i = 0; i < _restPresets.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    _buildRestChip(_restPresets[i]),
+                  ],
+                ],
+              ),
+            ),
           Row(
             children: [
               OutlinedButton.icon(
@@ -746,46 +803,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Übung'),
               ),
-              const SizedBox(width: 8),
-              if (_restRunning)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatRestTime(_restSeconds),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.secondary,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: _cancelRestTimer,
-                        child: const Icon(Icons.close,
-                            size: 18, color: AppTheme.secondary),
-                      ),
-                    ],
-                  ),
-                )
-              else if (_exercises.any((e) => e.sets.isNotEmpty))
-                Wrap(
-                  spacing: 6,
-                  children: [
-                    _buildRestChip(30),
-                    _buildRestChip(60),
-                    _buildRestChip(90),
-                    _buildRestChip(120),
-                  ],
-                ),
               const Spacer(),
               if (_exercises.isEmpty)
                 ElevatedButton(
