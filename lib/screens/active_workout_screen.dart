@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column, Index;
@@ -6,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
+import '../widgets/rest_timer_overlay.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
   final AppDatabase db;
@@ -30,6 +32,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   bool _showRestTimer = false;
   final Map<int, _SetControllers> _controllers = {};
 
+  Timer? _stopwatchTimer;
+  int _elapsedSeconds = 0;
+
   static final _setBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(4),
     borderSide: const BorderSide(color: AppTheme.muted, width: 1),
@@ -43,6 +48,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     super.initState();
     if (widget.workout != null) {
       _workout = widget.workout!;
+      _startStopwatch();
       _loadExercises();
     } else {
       _createWorkout();
@@ -51,6 +57,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   @override
   void dispose() {
+    _stopwatchTimer?.cancel();
     for (final c in _controllers.values) {
       c.dispose();
     }
@@ -63,6 +70,25 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       weight: TextEditingController(text: formatWeight(set.weightKg)),
       rpe: TextEditingController(text: set.rpe?.toString() ?? ''),
     ));
+  }
+
+  void _startStopwatch() {
+    final diff = DateTime.now().difference(_workout.startedAt).inSeconds;
+    setState(() => _elapsedSeconds = diff > 0 ? diff : 0);
+    _stopwatchTimer?.cancel();
+    _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _elapsedSeconds++);
+    });
+  }
+
+  String _formatElapsed(int totalSeconds) {
+    final h = totalSeconds ~/ 3600;
+    final m = (totalSeconds % 3600) ~/ 60;
+    final s = totalSeconds % 60;
+    if (h > 0) {
+      return '${h}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   Future<void> _createWorkout() async {
@@ -78,6 +104,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ..where((w) => w.id.equals(id)))
         .getSingle();
     setState(() => _workout = workout);
+    _startStopwatch();
   }
 
   Future<void> _loadExercises() async {
@@ -307,6 +334,21 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.gym.name),
+          actions: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Text(
+                  _formatElapsed(_elapsedSeconds),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -334,6 +376,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                           _buildExerciseCard(_exercises[i]),
                     ),
             ),
+            if (_showRestTimer)
+              RestTimerOverlay(
+                onClose: () => setState(() => _showRestTimer = false),
+              ),
             _buildBottomBar(),
           ],
         ),
