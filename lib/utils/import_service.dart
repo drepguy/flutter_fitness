@@ -34,7 +34,7 @@ class ImportService {
     }
 
     final now = DateTime.now();
-    final sections = _parseSections(rawData);
+    final sections = _parseSections(rawData, gymCache);
 
     for (final section in sections) {
       final gymId = gymCache[section.gymName.toLowerCase()];
@@ -146,7 +146,7 @@ class ImportService {
     return clean;
   }
 
-  List<_Section> _parseSections(String raw) {
+  List<_Section> _parseSections(String raw, Map<String, int> gymCache) {
     final sections = <_Section>[];
     _Section? current;
 
@@ -154,9 +154,25 @@ class ImportService {
       line = line.trim();
       if (line.isEmpty) continue;
 
-      if (line == 'Thomas Sport Center:' ||
-          line == 'All inclusive Fitness:') {
-        current = _Section(gymName: line.replaceAll(':', '').trim());
+      // Detect section headers: lines ending with ":"
+      if (line.endsWith(':') && line.length > 1) {
+        final headerName = line.substring(0, line.length - 1).trim();
+        final lowerName = headerName.toLowerCase();
+
+        // Find matching gym in DB (exact or fuzzy)
+        String? matchedDbName;
+        if (gymCache.containsKey(lowerName)) {
+          matchedDbName = lowerName;
+        } else {
+          for (final gName in gymCache.keys) {
+            if (lowerName.contains(gName) || gName.contains(lowerName)) {
+              matchedDbName = gName;
+              break;
+            }
+          }
+        }
+
+        current = _Section(gymName: matchedDbName ?? headerName);
         sections.add(current);
         continue;
       }
