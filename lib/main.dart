@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
-import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/exercise_list_screen.dart';
 import 'screens/analyse_screen.dart';
@@ -23,10 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Fitness',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
-      routes: {
-        '/home': (_) => MainScreen(db: db),
-      },
+      home: MainScreen(db: db),
     );
   }
 }
