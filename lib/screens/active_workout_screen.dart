@@ -511,7 +511,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 controller: c.reps,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 16),
+                onTap: () => c.reps.selection = TextSelection(
+                    baseOffset: 0, extentOffset: c.reps.text.length),
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.zero,
                   isCollapsed: true,
@@ -533,7 +535,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 16),
+                onTap: () => c.weight.selection = TextSelection(
+                    baseOffset: 0, extentOffset: c.weight.text.length),
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.zero,
                   isCollapsed: true,
@@ -554,7 +558,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 controller: c.rpe,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 16),
+                onTap: () => c.rpe.selection = TextSelection(
+                    baseOffset: 0, extentOffset: c.rpe.text.length),
                 decoration: InputDecoration(
                   hintText: '-',
                   contentPadding: EdgeInsets.zero,

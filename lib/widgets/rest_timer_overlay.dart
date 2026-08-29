@@ -42,6 +42,13 @@ class _RestTimerOverlayState extends State<RestTimerOverlay> {
     if (_seconds <= 0) {
       _running = false;
       HapticFeedback.heavyImpact();
+      HapticFeedback.vibrate();
+      await Future.delayed(const Duration(milliseconds: 200));
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+      HapticFeedback.heavyImpact();
       widget.onClose();
     }
   }
