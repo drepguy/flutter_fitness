@@ -405,11 +405,70 @@ class _HomeScreenState extends State<HomeScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
               ],
+              if (!isActive) ...[
+                const SizedBox(height: 8),
+                FutureBuilder<Map<String, dynamic>>(
+                  future: _getWorkoutStats(workout.id),
+                  builder: (context, snap) {
+                    if (!snap.hasData) return const SizedBox();
+                    final stats = snap.data!;
+                    final exerciseCount = stats['exerciseCount'] as int;
+                    final volume = stats['totalVolume'] as double;
+                    return Row(
+                      children: [
+                        _buildStatChip(Icons.fitness_center, '$exerciseCount Übungen'),
+                        const SizedBox(width: 8),
+                        _buildStatChip(Icons.scale, '${formatVolume(volume)} kg'),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildStatChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppTheme.muted),
+          const SizedBox(width: 4),
+          Text(text,
+              style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _getWorkoutStats(int workoutId) async {
+    final exercises = await (widget.db.select(widget.db.workoutExercises)
+          ..where((we) => we.workoutId.equals(workoutId)))
+        .get();
+
+    int totalVolume = 0;
+    for (final we in exercises) {
+      final sets = await (widget.db.select(widget.db.workoutSets)
+            ..where((s) => s.workoutExerciseId.equals(we.id)))
+          .get();
+      for (final set in sets) {
+        totalVolume += (set.weightKg * set.reps).toInt();
+      }
+    }
+
+    return {
+      'exerciseCount': exercises.length,
+      'totalVolume': totalVolume.toDouble(),
+    };
   }
 
   Future<void> _deleteSelectedWorkouts() async {
