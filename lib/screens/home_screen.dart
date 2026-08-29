@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/import_service.dart';
 import 'active_workout_screen.dart';
 import 'workout_detail_screen.dart';
 import 'gym_management_screen.dart';
@@ -25,6 +26,58 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  Future<void> _showImportDialog() async {
+    final textController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Notizen importieren'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: TextField(
+            controller: textController,
+            maxLines: null,
+            expands: true,
+            decoration: const InputDecoration(
+              hintText: 'Trainingsdaten hier einfügen...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Importieren'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && textController.text.isNotEmpty) {
+      try {
+        final service = ImportService(widget.db);
+        await service.importNoteData(textController.text);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Import erfolgreich!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Fehler: $e')),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -55,6 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('UL Fitness'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            onPressed: () => _showImportDialog(),
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
