@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
@@ -264,7 +265,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Analyse')),
+      appBar: AppBar(title: Text('Analyse', style: GoogleFonts.orbitron(fontWeight: FontWeight.bold))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
