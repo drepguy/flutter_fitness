@@ -1,5 +1,5 @@
 name: flutter_fitness
-description: "UL Fitness - Lokaler Fitness Tracker"
+description: "Flutter Fitness - Lokaler Fitness Tracker"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -21,6 +21,7 @@ dependencies:
   vibration: ^3.2.0
   shared_preferences: ^2.5.5
   google_fonts: ^8.2.1
+  flutter_launcher_icons: ^0.9.3
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#121212"
+  adaptive_icon_foreground: "assets/app_icon.png"
