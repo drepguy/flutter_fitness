@@ -36,6 +36,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
   List<int> _restPresets = [30, 60, 90, 120];
+  final ScrollController _scrollController = ScrollController();
 
   Timer? _stopwatchTimer;
   int _elapsedSeconds = 0;
@@ -75,6 +76,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   void dispose() {
     _stopwatchTimer?.cancel();
     _restTimer?.cancel();
+    _scrollController.dispose();
     for (final c in _controllers.values) {
       c.dispose();
     }
@@ -179,6 +181,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   Future<void> _createWorkout() async {
     final now = DateTime.now();
     final id = await widget.db.into(widget.db.workouts).insert(
@@ -239,6 +253,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         sets: [],
       ));
     });
+    _scrollToBottom();
   }
 
   Future<Exercise?> _predictNextExercise() async {
@@ -332,6 +347,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ..where((s) => s.id.equals(setId)))
         .getSingle();
     setState(() => ae.sets.add(set));
+    _scrollToBottom();
   }
 
   Future<WorkoutSet?> _getGhostData(_ActiveExercise ae) async {
@@ -475,6 +491,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       ),
                     )
                   : ListView.builder(
+                      controller: _scrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: _exercises.length,
                       itemBuilder: (context, i) =>
