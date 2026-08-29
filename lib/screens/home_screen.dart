@@ -23,6 +23,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Workout> _recentWorkouts = [];
   Map<int, List<WorkoutTemplate>> _templatesByGym = {};
 
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -115,28 +118,63 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UL Fitness'),
+        title: _selectionMode
+            ? Text('${_selectedIds.length} ausgewählt')
+            : const Text('UL Fitness'),
+        leading: _selectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  _selectionMode = false;
+                  _selectedIds.clear();
+                }),
+              )
+            : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            onPressed: () => _showImportDialog(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () => _exportAndShare(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SettingsScreen(db: widget.db),
-                ),
-              );
-              _loadData();
-            },
-          ),
+          if (_selectionMode) ...[
+            IconButton(
+              icon: const Icon(Icons.select_all),
+              tooltip: 'Alle auswählen',
+              onPressed: () {
+                setState(() {
+                  if (_selectedIds.length == _recentWorkouts.length) {
+                    _selectedIds.clear();
+                  } else {
+                    _selectedIds.addAll(
+                        _recentWorkouts.map((w) => w.id));
+                  }
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete,
+                  color: AppTheme.error),
+              onPressed: _selectedIds.isEmpty
+                  ? null
+                  : () => _deleteSelectedWorkouts(),
+            ),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              onPressed: () => _showImportDialog(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _exportAndShare(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SettingsScreen(db: widget.db),
+                  ),
+                );
+                _loadData();
+              },
+            ),
+          ],
         ],
       ),
       body: RefreshIndicator(
@@ -270,12 +308,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildWorkoutCard(Workout workout) {
     final isActive = workout.endedAt == null;
+    final isSelected = _selectedIds.contains(workout.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onLongPress: () => _showDeleteWorkoutDialog(workout),
+        onLongPress: () {
+          if (!_selectionMode) {
+            setState(() {
+              _selectionMode = true;
+              _selectedIds.add(workout.id);
+            });
+          }
+        },
         onTap: () async {
+          if (_selectionMode) {
+            setState(() {
+              if (isSelected) {
+                _selectedIds.remove(workout.id);
+                if (_selectedIds.isEmpty) _selectionMode = false;
+              } else {
+                _selectedIds.add(workout.id);
+              }
+            });
+            return;
+          }
           final gym = await (widget.db.select(widget.db.gyms)
                 ..where((g) => g.id.equals(workout.gymId!)))
               .getSingle();
@@ -298,6 +356,17 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Row(
                 children: [
+                  if (_selectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? AppTheme.primary : AppTheme.muted,
+                        size: 22,
+                      ),
+                    ),
                   Expanded(
                     child: FutureBuilder<Gym?>(
                       future: workout.gymId != null
@@ -448,11 +517,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadData();
   }
 
-  Future<void> _showDeleteWorkoutDialog(Workout workout) async {
+  Future<void> _deleteSelectedWorkouts() async {
+    final count = _selectedIds.length;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Training löschen?'),
+        title: Text('$count ${count == 1 ? 'Training' : 'Trainings'} löschen?'),
         content: const Text('Diese Aktion kann nicht rückgängig gemacht werden.'),
         actions: [
           TextButton(
@@ -469,8 +539,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (confirmed == true) {
       await (widget.db.delete(widget.db.workouts)
-            ..where((w) => w.id.equals(workout.id)))
+            ..where((w) => w.id.isIn(_selectedIds)))
           .go();
+      setState(() {
+        _selectionMode = false;
+        _selectedIds.clear();
+      });
       _loadData();
     }
   }
