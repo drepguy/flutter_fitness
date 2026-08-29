@@ -204,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
+        onLongPress: () => _showDeleteWorkoutDialog(workout),
         onTap: () async {
           if (isActive) {
             final gym = await (widget.db.select(widget.db.gyms)
@@ -372,5 +373,32 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     _loadData();
+  }
+
+  Future<void> _showDeleteWorkoutDialog(Workout workout) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Training löschen?'),
+        content: const Text('Diese Aktion kann nicht rückgängig gemacht werden.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await (widget.db.delete(widget.db.workouts)
+            ..where((w) => w.id.equals(workout.id)))
+          .go();
+      _loadData();
+    }
   }
 }
