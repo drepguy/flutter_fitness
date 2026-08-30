@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Training importieren'),
+        title: const Text('Daten importieren'),
         content: SizedBox(
           width: double.maxFinite,
           height: 300,
@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
             maxLines: null,
             expands: true,
             decoration: const InputDecoration(
-              hintText: 'Trainingsdaten hier einfügen...',
+              hintText: 'JSON-Daten hier einfügen...',
               border: OutlineInputBorder(),
             ),
           ),
@@ -77,11 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirmed == true && textController.text.isNotEmpty) {
       try {
         final service = ImportService(widget.db);
-        await service.importNoteData(textController.text);
+        final count = await service.importJson(textController.text);
         _loadData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Import erfolgreich!')),
+            SnackBar(content: Text('$count Datensätze importiert')),
           );
         }
       } catch (e) {
@@ -96,9 +96,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _exportAndShare() async {
     final service = ExportService(widget.db);
-    final text = await service.exportAsText();
+    final json = await service.exportAsJson();
     await SharePlus.instance.share(
-      ShareParams(text: text, subject: 'Flutter Fitness Export'),
+      ShareParams(text: json, subject: 'Flutter Fitness Export'),
     );
   }
 

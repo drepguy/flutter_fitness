@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 
@@ -6,285 +7,234 @@ class ImportService {
 
   ImportService(this.db);
 
-  Future<void> importNoteData(String rawData) async {
-    final exerciseCache = <String, int>{};
-    final aliasCache = <String, int>{};
+  Future<int> importJson(String jsonString) async {
+    final data = jsonDecode(jsonString) as Map<String, dynamic>;
 
-    // Preload exercises
-    final exercises = await db.select(db.exercises).get();
-    for (final e in exercises) {
-      exerciseCache[e.name.toLowerCase()] = e.id;
+    if (data['version'] != 1) {
+      throw Exception('Unbekanntes Export-Format (Version: ${data['version']})');
     }
 
-    // Preload aliases
-    final aliasRows = await (db.select(db.exerciseAliases).join([
-      innerJoin(db.exercises,
-          db.exercises.id.equalsExp(db.exerciseAliases.exerciseId)),
-    ])).get();
-    for (final row in aliasRows) {
-      final alias = row.readTable(db.exerciseAliases);
-      aliasCache[alias.alias.toLowerCase()] = alias.exerciseId;
+    int imported = 0;
+
+    // Gyms: match by name
+    final gymIdMap = <int, int>{};
+    final existingGyms = await db.select(db.gyms).get();
+    final gymNameMap = <String, int>{};
+    for (final g in existingGyms) {
+      gymNameMap[g.name.toLowerCase()] = g.id;
     }
-
-    // Preload gyms
-    final gymCache = <String, int>{};
-    final gyms = await db.select(db.gyms).get();
-    for (final g in gyms) {
-      gymCache[g.name.toLowerCase()] = g.id;
-    }
-
-    final now = DateTime.now();
-    final sections = _parseSections(rawData, gymCache);
-
-    for (final section in sections) {
-      final gymId = gymCache[section.gymName.toLowerCase()];
-      if (gymId == null) continue;
-
-      for (final workout in section.workouts) {
-        final startedAt = DateTime(workout.year, workout.month, workout.day, 17);
-
-        int totalSets = 0;
-        for (final exLine in workout.exercises) {
-          totalSets += exLine.sets.length;
-        }
-        final endedAt = startedAt.add(Duration(minutes: 3 * totalSets) + const Duration(minutes: 1));
-
-        final workoutId = await db.into(db.workouts).insert(
-              WorkoutsCompanion.insert(
-                gymId: Value(gymId),
-                startedAt: startedAt,
-                endedAt: Value(endedAt),
-                createdAt: now,
-              ),
-            );
-
-        int orderIdx = 0;
-        int setCounter = 0;
-        for (final exLine in workout.exercises) {
-          final cleanName = _cleanExerciseName(exLine.name);
-          final exerciseId =
-              _findExerciseId(exerciseCache, aliasCache, cleanName);
-
-          if (exerciseId == null) continue;
-
-          final weId = await db.into(db.workoutExercises).insert(
-                WorkoutExercisesCompanion.insert(
-                  workoutId: workoutId,
-                  exerciseId: exerciseId,
-                  orderIdx: orderIdx++,
-                ),
-              );
-
-          int setNo = 1;
-          for (final set in exLine.sets) {
-            final setCreatedAt = startedAt.add(Duration(minutes: 3 * setCounter));
-            setCounter++;
-            if (set.skipped) {
-              await db.into(db.workoutSets).insert(
-                    WorkoutSetsCompanion.insert(
-                      workoutExerciseId: weId,
-                      setNo: setNo++,
-                      reps: 0,
-                      weightKg: 0,
-                      isWarmup: const Value(false),
-                      isFailure: const Value(true),
-                      note: const Value('Skipped'),
-                      createdAt: setCreatedAt,
-                    ),
-                  );
-            } else {
-              await db.into(db.workoutSets).insert(
-                    WorkoutSetsCompanion.insert(
-                      workoutExerciseId: weId,
-                      setNo: setNo++,
-                      reps: set.reps,
-                      weightKg: set.weight,
-                      isWarmup: const Value(false),
-                      isFailure: const Value(false),
-                      createdAt: setCreatedAt,
-                    ),
-                  );
-            }
-          }
-        }
-      }
-    }
-  }
-
-  int? _findExerciseId(
-      Map<String, int> exMap, Map<String, int> aliasMap, String name) {
-    if (exMap.containsKey(name)) return exMap[name];
-    for (final e in exMap.entries) {
-      if (e.key.toLowerCase() == name.toLowerCase()) return e.value;
-    }
-    if (aliasMap.containsKey(name)) return aliasMap[name];
-    for (final a in aliasMap.entries) {
-      if (a.key.toLowerCase() == name.toLowerCase()) return a.value;
-    }
-    for (final e in exMap.entries) {
-      if (name.toLowerCase().contains(e.key.toLowerCase()) ||
-          e.key.toLowerCase().contains(name.toLowerCase())) {
-        return e.value;
-      }
-    }
-    final nameWords = name.toLowerCase().split(RegExp(r'\s+'));
-    for (final e in exMap.entries) {
-      final exWords = e.key.toLowerCase().split(RegExp(r'\s+'));
-      final matching = nameWords.where((w) => exWords.contains(w)).length;
-      if (matching >= 2) return e.value;
-    }
-    return null;
-  }
-
-  String _cleanExerciseName(String name) {
-    var clean = name.trim();
-    clean = clean.replaceAll(RegExp(r'\(.*?\)'), '').trim();
-    clean = clean.replaceAll(RegExp(r'\bam\s+'), ' ');
-    clean = clean.replaceAll(RegExp(r'\ban\s+.*$'), '');
-    clean = clean.replaceAll(RegExp(r'\bMaschine\b'), '').trim();
-    clean = clean.replaceAll(RegExp(r'\bBrustgestützt\b'), '').trim();
-    clean = clean.replaceAll(RegExp(r'\bals\s+Ersatz\b.*$'), '').trim();
-    clean = clean.replaceAll(RegExp(r'\boverhead\s+'), ' ');
-    clean = clean.replaceAll(RegExp(r'\binnen\s+'), '-');
-    clean = clean.replaceAll(RegExp(r'\baußen\s+'), '-');
-    clean = clean.replaceAll(RegExp(r'\bund\s+finger\b'), '').trim();
-    clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return clean;
-  }
-
-  List<_Section> _parseSections(String raw, Map<String, int> gymCache) {
-    final sections = <_Section>[];
-    _Section? current;
-
-    for (var line in raw.split('\n')) {
-      line = line.trim();
-      if (line.isEmpty) continue;
-
-      // Detect section headers: lines ending with ":"
-      if (line.endsWith(':') && line.length > 1) {
-        final headerName = line.substring(0, line.length - 1).trim();
-        final lowerName = headerName.toLowerCase();
-
-        // Find matching gym in DB (exact or fuzzy)
-        String? matchedDbName;
-        if (gymCache.containsKey(lowerName)) {
-          matchedDbName = lowerName;
-        } else {
-          for (final gName in gymCache.keys) {
-            if (lowerName.contains(gName) || gName.contains(lowerName)) {
-              matchedDbName = gName;
-              break;
-            }
-          }
-        }
-
-        current = _Section(gymName: matchedDbName ?? headerName);
-        sections.add(current);
-        continue;
-      }
-
-      if (current == null) continue;
-
-      final dateMatch =
-          RegExp(r'^(\d{2})\.(\d{2})\.(\d{4})').firstMatch(line);
-      if (dateMatch != null) {
-        current.workouts.add(_WorkoutData(
-          day: int.parse(dateMatch.group(1)!),
-          month: int.parse(dateMatch.group(2)!),
-          year: int.parse(dateMatch.group(3)!),
+    for (final g in (data['gyms'] as List? ?? [])) {
+      final name = g['name'] as String;
+      final existingId = gymNameMap[name.toLowerCase()];
+      if (existingId != null) {
+        gymIdMap[g['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.gyms).insert(GymsCompanion.insert(
+          name: name,
+          city: Value(g['city'] as String?),
+          isSystem: Value(g['isSystem'] as bool? ?? false),
+          createdAt: DateTime.parse(g['createdAt'] as String),
         ));
-        continue;
-      }
-
-      if (line.contains(':') && current.workouts.isNotEmpty) {
-        final colonIdx = line.indexOf(':');
-        final exerciseName = line.substring(0, colonIdx).trim();
-        final setsStr = line.substring(colonIdx + 1).trim();
-        final sets = _parseSets(setsStr);
-        if (sets.isNotEmpty) {
-          current.workouts.last.exercises
-              .add(_ExerciseLine(name: exerciseName, sets: sets));
-        }
+        gymIdMap[g['id'] as int] = newId;
+        gymNameMap[name.toLowerCase()] = newId;
+        imported++;
       }
     }
 
-    return sections;
-  }
-
-  List<_SetLine> _parseSets(String str) {
-    final sets = <_SetLine>[];
-    for (var part in str.split(',')) {
-      part = part.trim();
-      if (part.isEmpty) continue;
-      if (part.contains('muss') || part.contains('weggelassen')) {
-        sets.add(_SetLine(skipped: true, weight: 0, reps: 0));
-        continue;
-      }
-      if (part.contains('warmup') ||
-          (part.contains(' und ') && !part.contains('x'))) {
-        continue;
-      }
-      if (part.contains('abbruch')) {
-        sets.add(_SetLine(skipped: true, weight: 0, reps: 0));
-        continue;
-      }
-
-      part = part.replaceAll(RegExp(r'\s+'), '');
-
-      final match =
-          RegExp(r'(\d+)\s*x\s*([\d,.\w]*?)$').firstMatch(part);
-      if (match != null) {
-        final reps = int.tryParse(match.group(1)!);
-        var weightStr = match.group(2)!.trim();
-        weightStr =
-            weightStr.replaceAll('kg', '').replaceAll('lg', '').trim();
-
-        if (weightStr == 'stange' ||
-            weightStr == 'body' ||
-            weightStr == 'bodyweight' ||
-            weightStr.isEmpty) {
-          sets.add(
-              _SetLine(skipped: false, weight: 0, reps: reps ?? 0));
-          continue;
-        }
-
-        weightStr = weightStr.replaceAll(',', '.');
-        final weight = double.tryParse(weightStr);
-        if (weight != null && reps != null) {
-          sets.add(
-              _SetLine(skipped: false, weight: weight, reps: reps));
-        }
+    // Exercises: match by name
+    final exerciseIdMap = <int, int>{};
+    final existingExercises = await db.select(db.exercises).get();
+    final exNameMap = <String, int>{};
+    for (final e in existingExercises) {
+      exNameMap[e.name.toLowerCase()] = e.id;
+    }
+    for (final e in (data['exercises'] as List? ?? [])) {
+      final name = e['name'] as String;
+      final existingId = exNameMap[name.toLowerCase()];
+      if (existingId != null) {
+        exerciseIdMap[e['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.exercises).insert(ExercisesCompanion.insert(
+          name: name,
+          category: Value(e['category'] as String? ?? 'Sonstiges'),
+          kind: Value(e['kind'] as String? ?? 'free_weight'),
+          iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
+          isSystem: Value(e['isSystem'] as bool? ?? false),
+          createdAt: DateTime.parse(e['createdAt'] as String),
+        ));
+        exerciseIdMap[e['id'] as int] = newId;
+        exNameMap[name.toLowerCase()] = newId;
+        imported++;
       }
     }
-    return sets;
+
+    // Exercise Aliases: match by exerciseId+alias
+    final aliasIdMap = <int, int>{};
+    final existingAliases = await db.select(db.exerciseAliases).get();
+    final aliasKeyMap = <String, int>{};
+    for (final a in existingAliases) {
+      aliasKeyMap['${a.exerciseId}_${a.alias.toLowerCase()}'] = a.id;
+    }
+    for (final a in (data['exerciseAliases'] as List? ?? [])) {
+      final exId = exerciseIdMap[a['exerciseId'] as int];
+      if (exId == null) continue;
+      final alias = a['alias'] as String;
+    final key = '${exId}_${alias.toLowerCase()}';
+      if (aliasKeyMap.containsKey(key)) continue;
+      final newId = await db.into(db.exerciseAliases).insert(ExerciseAliasesCompanion.insert(
+        exerciseId: exId,
+        alias: alias,
+        createdAt: DateTime.parse(a['createdAt'] as String),
+      ));
+      aliasIdMap[a['id'] as int] = newId;
+      aliasKeyMap[key] = newId;
+      imported++;
+    }
+
+    // Workouts: match by startedAt + gymId
+    final workoutIdMap = <int, int>{};
+    final existingWorkouts = await db.select(db.workouts).get();
+    final workoutKeyMap = <String, int>{};
+    for (final w in existingWorkouts) {
+      final key = '${w.startedAt.toIso8601String()}_${w.gymId}';
+      workoutKeyMap[key] = w.id;
+    }
+    for (final w in (data['workouts'] as List? ?? [])) {
+      final startedAt = DateTime.parse(w['startedAt'] as String);
+      final gymId = w['gymId'] != null ? gymIdMap[w['gymId'] as int] : null;
+      final key = '${startedAt.toIso8601String()}_${gymId}';
+      final existingId = workoutKeyMap[key];
+      if (existingId != null) {
+        workoutIdMap[w['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.workouts).insert(WorkoutsCompanion.insert(
+          gymId: Value(gymId),
+          startedAt: startedAt,
+          endedAt: w['endedAt'] != null ? Value(DateTime.parse(w['endedAt'] as String)) : const Value.absent(),
+          notes: w['notes'] != null ? Value(w['notes'] as String) : const Value.absent(),
+          createdAt: DateTime.parse(w['createdAt'] as String),
+        ));
+        workoutIdMap[w['id'] as int] = newId;
+        workoutKeyMap[key] = newId;
+        imported++;
+      }
+    }
+
+    // Workout Exercises: match by workoutId + exerciseId + orderIdx
+    final weIdMap = <int, int>{};
+    final existingWes = await db.select(db.workoutExercises).get();
+    final weKeyMap = <String, int>{};
+    for (final we in existingWes) {
+      final key = '${we.workoutId}_${we.exerciseId}_${we.orderIdx}';
+      weKeyMap[key] = we.id;
+    }
+    for (final we in (data['workoutExercises'] as List? ?? [])) {
+      final workoutId = workoutIdMap[we['workoutId'] as int];
+      final exerciseId = exerciseIdMap[we['exerciseId'] as int];
+      if (workoutId == null || exerciseId == null) continue;
+      final orderIdx = we['orderIdx'] as int;
+      final key = '${workoutId}_${exerciseId}_${orderIdx}';
+      final existingId = weKeyMap[key];
+      if (existingId != null) {
+        weIdMap[we['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.workoutExercises).insert(WorkoutExercisesCompanion.insert(
+          workoutId: workoutId,
+          exerciseId: exerciseId,
+          orderIdx: orderIdx,
+          notes: we['notes'] != null ? Value(we['notes'] as String) : const Value.absent(),
+        ));
+        weIdMap[we['id'] as int] = newId;
+        weKeyMap[key] = newId;
+        imported++;
+      }
+    }
+
+    // Workout Sets: match by workoutExerciseId + setNo
+    final setIdMap = <int, int>{};
+    final existingSets = await db.select(db.workoutSets).get();
+    final setKeyMap = <String, int>{};
+    for (final s in existingSets) {
+      final key = '${s.workoutExerciseId}_${s.setNo}';
+      setKeyMap[key] = s.id;
+    }
+    for (final s in (data['workoutSets'] as List? ?? [])) {
+      final weId = weIdMap[s['workoutExerciseId'] as int];
+      if (weId == null) continue;
+      final setNo = s['setNo'] as int;
+      final key = '${weId}_${setNo}';
+      final existingId = setKeyMap[key];
+      if (existingId != null) {
+        setIdMap[s['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.workoutSets).insert(WorkoutSetsCompanion.insert(
+          workoutExerciseId: weId,
+          setNo: setNo,
+          reps: s['reps'] as int,
+          weightKg: (s['weightKg'] as num).toDouble(),
+          isWarmup: Value(s['isWarmup'] as bool? ?? false),
+          rpe: s['rpe'] != null ? Value(s['rpe'] as int) : const Value.absent(),
+          isFailure: Value(s['isFailure'] as bool? ?? false),
+          note: s['note'] != null ? Value(s['note'] as String) : const Value.absent(),
+          createdAt: DateTime.parse(s['createdAt'] as String),
+        ));
+        setIdMap[s['id'] as int] = newId;
+        setKeyMap[key] = newId;
+        imported++;
+      }
+    }
+
+    // Workout Templates: match by gymId + name
+    final templateIdMap = <int, int>{};
+    final existingTemplates = await db.select(db.workoutTemplates).get();
+    final templateKeyMap = <String, int>{};
+    for (final t in existingTemplates) {
+      final key = '${t.gymId}_${t.name.toLowerCase()}';
+      templateKeyMap[key] = t.id;
+    }
+    for (final t in (data['workoutTemplates'] as List? ?? [])) {
+      final gymId = gymIdMap[t['gymId'] as int];
+      if (gymId == null) continue;
+      final name = t['name'] as String;
+      final key = '${gymId}_${name.toLowerCase()}';
+      final existingId = templateKeyMap[key];
+      if (existingId != null) {
+        templateIdMap[t['id'] as int] = existingId;
+      } else {
+        final newId = await db.into(db.workoutTemplates).insert(WorkoutTemplatesCompanion.insert(
+          gymId: gymId,
+          name: name,
+          createdAt: DateTime.parse(t['createdAt'] as String),
+          updatedAt: DateTime.parse(t['updatedAt'] as String),
+        ));
+        templateIdMap[t['id'] as int] = newId;
+        templateKeyMap[key] = newId;
+        imported++;
+      }
+    }
+
+    // Workout Template Exercises: match by templateId + exerciseId + orderIdx
+    final teKeyMap = <String, bool>{};
+    final existingTes = await db.select(db.workoutTemplateExercises).get();
+    for (final te in existingTes) {
+      teKeyMap['${te.templateId}_${te.exerciseId}_${te.orderIdx}'] = true;
+    }
+    for (final te in (data['workoutTemplateExercises'] as List? ?? [])) {
+      final templateId = templateIdMap[te['templateId'] as int];
+      final exerciseId = exerciseIdMap[te['exerciseId'] as int];
+      if (templateId == null || exerciseId == null) continue;
+      final orderIdx = te['orderIdx'] as int;
+      final key = '${templateId}_${exerciseId}_${orderIdx}';
+      if (teKeyMap.containsKey(key)) continue;
+      await db.into(db.workoutTemplateExercises).insert(WorkoutTemplateExercisesCompanion.insert(
+        templateId: templateId,
+        exerciseId: exerciseId,
+        orderIdx: orderIdx,
+      ));
+      teKeyMap[key] = true;
+      imported++;
+    }
+
+    return imported;
   }
-}
-
-class _Section {
-  final String gymName;
-  final List<_WorkoutData> workouts = [];
-  _Section({required this.gymName});
-}
-
-class _WorkoutData {
-  final int day;
-  final int month;
-  final int year;
-  final List<_ExerciseLine> exercises = [];
-  _WorkoutData(
-      {required this.day, required this.month, required this.year});
-}
-
-class _ExerciseLine {
-  final String name;
-  final List<_SetLine> sets;
-  _ExerciseLine({required this.name, required this.sets});
-}
-
-class _SetLine {
-  final bool skipped;
-  final double weight;
-  final int reps;
-  _SetLine(
-      {required this.skipped, required this.weight, required this.reps});
 }
