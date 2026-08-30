@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
@@ -20,11 +19,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  OverlayEntry? _undoOverlay;
-  Timer? _undoTimer;
-  late AnimationController _undoAnimController;
-  late Animation<Offset> _undoSlideAnimation;
+class _HomeScreenState extends State<HomeScreen> {
   List<Gym> _gyms = [];
   List<Workout> _recentWorkouts = [];
   Map<int, String> _gymNames = {};
@@ -36,26 +31,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _undoAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _undoSlideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _undoAnimController,
-      curve: Curves.easeOut,
-    ));
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _undoTimer?.cancel();
-    _undoOverlay?.remove();
-    _undoAnimController.dispose();
-    super.dispose();
   }
 
   Future<void> _showImportDialog() async {
@@ -525,115 +501,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     };
   }
 
-  void _dismissUndoOverlay() {
-    _undoTimer?.cancel();
-    _undoOverlay?.remove();
-    _undoOverlay = null;
-  }
-
-  void _showUndoOverlay(List<dynamic> toDelete) {
-    _dismissUndoOverlay();
-
-    _undoSlideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _undoAnimController,
-      curve: Curves.easeOut,
-    ));
-    _undoAnimController.value = 0;
-
-    final overlay = Overlay.of(context);
-    _undoOverlay = OverlayEntry(
-      builder: (context) => AnimatedBuilder(
-        animation: _undoAnimController,
-        builder: (context, child) {
-          final offset = _undoSlideAnimation.value;
-          return Positioned(
-            bottom: 80,
-            left: 16,
-            right: 16,
-            child: Transform.translate(
-              offset: Offset(
-                offset.dx * MediaQuery.of(context).size.width,
-                offset.dy * 200,
-              ),
-              child: Opacity(
-                opacity: 1.0 - _undoAnimController.value,
-                child: child,
-              ),
-            ),
-          );
-        },
-        child: GestureDetector(
-          onVerticalDragEnd: (details) {
-            final v = details.primaryVelocity ?? 0;
-            _animateDismissOut(v > 0 ? const Offset(0, 1) : const Offset(0, -1));
-          },
-          onHorizontalDragEnd: (details) {
-            final v = details.primaryVelocity ?? 0;
-            _animateDismissOut(v > 0 ? const Offset(1, 0) : const Offset(-1, 0));
-          },
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.inverseSurface,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black54)],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${toDelete.length} Training gelöscht',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onInverseSurface,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      _animateDismissOut(Offset.zero);
-                      for (final workout in toDelete) {
-                        await widget.db.into(widget.db.workouts).insert(workout);
-                      }
-                      _loadData();
-                    },
-                    child: const Text('Rückgängig'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    overlay.insert(_undoOverlay!);
-
-    _undoTimer = Timer(const Duration(seconds: 10), () {
-      _animateDismissOut(const Offset(0, 1));
-    });
-  }
-
-  void _animateDismissOut(Offset direction) {
-    _undoTimer?.cancel();
-    _undoSlideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: direction,
-    ).animate(CurvedAnimation(
-      parent: _undoAnimController,
-      curve: Curves.easeOut,
-    ));
-    _undoAnimController.forward(from: 0).then((_) {
-      _undoOverlay?.remove();
-      _undoOverlay = null;
-    });
-  }
-
   Future<void> _deleteSelectedWorkouts() async {
     final toDelete = _recentWorkouts
         .where((w) => _selectedIds.contains(w.id))
@@ -645,7 +512,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
 
     ScaffoldMessenger.of(context).clearSnackBars();
-    _showUndoOverlay(toDelete);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${toDelete.length} Training gelöscht'),
+        action: SnackBarAction(
+          label: 'Rückgängig',
+          onPressed: () async {
+            for (final workout in toDelete) {
+              await widget.db.into(widget.db.workouts).insert(workout);
+            }
+            _loadData();
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
 
     for (final workout in toDelete) {
       await (widget.db.delete(widget.db.workouts)
