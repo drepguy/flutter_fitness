@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -141,27 +142,29 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   _SetFocusNodes _getFocusNodes(WorkoutSet set) {
-    final fn = _focusNodes.putIfAbsent(set.id, () => _SetFocusNodes());
     final c = _getControllers(set);
-    fn.reps.addListener(() {
-      if (fn.reps.hasFocus) {
-        c.reps.selection = TextSelection(
-            baseOffset: 0, extentOffset: c.reps.text.length);
-      }
+    return _focusNodes.putIfAbsent(set.id, () {
+      final fn = _SetFocusNodes();
+      fn.reps.addListener(() {
+        if (fn.reps.hasFocus) {
+          c.reps.selection = TextSelection(
+              baseOffset: 0, extentOffset: c.reps.text.length);
+        }
+      });
+      fn.weight.addListener(() {
+        if (fn.weight.hasFocus) {
+          c.weight.selection = TextSelection(
+              baseOffset: 0, extentOffset: c.weight.text.length);
+        }
+      });
+      fn.rpe.addListener(() {
+        if (fn.rpe.hasFocus) {
+          c.rpe.selection = TextSelection(
+              baseOffset: 0, extentOffset: c.rpe.text.length);
+        }
+      });
+      return fn;
     });
-    fn.weight.addListener(() {
-      if (fn.weight.hasFocus) {
-        c.weight.selection = TextSelection(
-            baseOffset: 0, extentOffset: c.weight.text.length);
-      }
-    });
-    fn.rpe.addListener(() {
-      if (fn.rpe.hasFocus) {
-        c.rpe.selection = TextSelection(
-            baseOffset: 0, extentOffset: c.rpe.text.length);
-      }
-    });
-    return fn;
   }
 
   void _startStopwatch() {
@@ -518,12 +521,15 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _exercises.length,
-                      itemBuilder: (context, i) =>
-                          _buildExerciseCard(_exercises[i]),
+                  : RepaintBoundary(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        scrollCacheExtent: ScrollCacheExtent.pixels(10000),
+                        itemCount: _exercises.length,
+                        itemBuilder: (context, i) =>
+                            _buildExerciseCard(_exercises[i]),
+                      ),
                     ),
             ),
             _buildBottomBar(),
@@ -654,13 +660,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final timeStr =
         '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
     final isEven = set.setNo % 2 == 0;
-    return Padding(
-      padding: EdgeInsets.zero,
+    return SizedBox(
+      height: 44,
       child: Container(
         color: isEven ? _altRowColor : null,
-        child: SizedBox(
-          height: 44,
-          child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
             children: [
             SizedBox(
               width: 40,
@@ -773,7 +778,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ],
         ),
       ),
-    ),
     );
   }
 
@@ -837,74 +841,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('$totalSets Sätze',
-                      style: const TextStyle(
-                          color: AppTheme.muted, fontSize: 12)),
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                   const SizedBox(width: 16),
                   Text('${formatVolume(totalVolume)} kg',
-                      style: const TextStyle(
-                          color: AppTheme.muted, fontSize: 12)),
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                   const SizedBox(width: 16),
                   Text('${_exercises.length} Übungen',
-                      style: const TextStyle(
-                          color: AppTheme.muted, fontSize: 12)),
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                 ],
               ),
             ),
-          ValueListenableBuilder<bool>(
-            valueListenable: _restDisplayRunning,
-            builder: (context, running, _) {
-              if (running) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.secondary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ValueListenableBuilder<int>(
-                          valueListenable: _restDisplaySeconds,
-                          builder: (context, secs, _) => Text(
-                            _formatRestTime(secs),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.secondary,
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: _cancelRestTimer,
-                          child: const Icon(Icons.close,
-                              size: 20, color: AppTheme.secondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              if (_exercises.any((e) => e.sets.isNotEmpty)) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (int i = 0; i < _restPresets.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    _buildRestChip(_restPresets[i]),
-                  ],
-                ],
-              ),
-            );
-              }
-              return const SizedBox.shrink();
-            }),
+          _buildTimerRow(),
           Row(
             children: [
               OutlinedButton.icon(
@@ -915,8 +862,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               const Spacer(),
               if (_exercises.isEmpty)
                 ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
                   onPressed: () => _showCancelDialog(),
                   child: const Text('Abbrechen'),
                 )
@@ -925,13 +871,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   onPressed: _saving
                       ? null
                       : () async {
-                          final result =
-                              await showDialog<Map<String, dynamic>>(
+                          final result = await showDialog<Map<String, dynamic>>(
                             context: context,
                             builder: (_) => FinishDialog(
                               exerciseCount: _exercises.length,
-                              setCount: _exercises.fold(
-                                  0, (sum, e) => sum + e.sets.length),
+                              setCount: _exercises.fold(0, (sum, e) => sum + e.sets.length),
                             ),
                           );
                           if (result != null) {
@@ -942,14 +886,70 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2))
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Fertig'),
                 ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTimerRow() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _restDisplayRunning,
+      builder: (context, running, _) {
+        if (running) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.secondary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ValueListenableBuilder<int>(
+                    valueListenable: _restDisplaySeconds,
+                    builder: (context, secs, _) => Text(
+                      _formatRestTime(secs),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.secondary,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _cancelRestTimer,
+                    child: const Icon(Icons.close, size: 20, color: AppTheme.secondary),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        if (_exercises.any((e) => e.sets.isNotEmpty)) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int i = 0; i < _restPresets.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _buildRestChip(_restPresets[i]),
+                ],
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
