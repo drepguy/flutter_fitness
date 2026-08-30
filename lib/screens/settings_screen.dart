@@ -89,11 +89,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _createBackup() async {
     final backupService = BackupService(widget.db);
-    await backupService.saveBackup();
+    final file = await backupService.saveBackup();
     await _loadBackupData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup erstellt')),
+        SnackBar(content: Text('Backup erstellt: ${file.path}')),
       );
     }
   }

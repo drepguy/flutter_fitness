@@ -16,8 +16,8 @@ class BackupService {
   static const _folderName = 'FlutterFitness';
 
   Future<Directory> get _backupDir async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docsDir.path}/$_folderName');
+    final extDir = await getExternalStorageDirectory();
+    final dir = Directory('${extDir!.path}/$_folderName');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
