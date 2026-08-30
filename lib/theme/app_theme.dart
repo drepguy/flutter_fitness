@@ -92,6 +92,9 @@ class AppTheme {
         selectedColor: secondary.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
+      snackBarTheme: SnackBarThemeData(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      ),
     );
   }
 }
