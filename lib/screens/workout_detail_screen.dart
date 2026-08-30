@@ -20,6 +20,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   bool _editing = false;
   bool _saving = false;
   final _notesController = TextEditingController();
+  DateTime? _editStartedAt;
+  DateTime? _editEndedAt;
 
   @override
   void initState() {
@@ -74,10 +76,49 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           ..where((w) => w.id.equals(widget.workoutId)))
         .write(WorkoutsCompanion(
       notes: Value(_notesController.text.isEmpty ? null : _notesController.text),
+      startedAt: _editStartedAt != null ? Value(_editStartedAt!) : const Value.absent(),
+      endedAt: _editEndedAt != null ? Value(_editEndedAt!) : const Value.absent(),
     ));
     setState(() {
       _saving = false;
       _editing = false;
+    });
+    _loadData();
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _editStartedAt ?? _workout!.startedAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_editStartedAt ?? _workout!.startedAt),
+    );
+    if (time == null) return;
+    setState(() {
+      _editStartedAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    });
+  }
+
+  Future<void> _pickEndTime() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _editEndedAt ?? _workout!.endedAt ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_editEndedAt ?? _workout!.endedAt ?? DateTime.now()),
+    );
+    if (time == null) return;
+    setState(() {
+      _editEndedAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
     });
   }
 
@@ -107,7 +148,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           if (!_editing)
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => setState(() => _editing = true),
+              onPressed: () => setState(() {
+                _editing = true;
+                _editStartedAt = _workout!.startedAt;
+                _editEndedAt = _workout!.endedAt;
+              }),
             ),
         ],
       ),
@@ -142,27 +187,37 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               fontWeight: FontWeight.bold,
                             )),
                     const SizedBox(height: 8),
-                    Text(
-                      '${formatDateTime(_workout!.startedAt)}${_workout!.endedAt != null ? ' — ${formatDateTime(_workout!.endedAt!)}' : ''}',
-                      style: const TextStyle(color: AppTheme.muted),
+                    GestureDetector(
+                      onTap: _editing ? _pickStartTime : null,
+                      child: Text(
+                        '${formatDateTime(_editStartedAt ?? _workout!.startedAt)}${(_editEndedAt ?? _workout!.endedAt) != null ? ' — ${formatDateTime(_editEndedAt ?? _workout!.endedAt!)}' : ''}',
+                        style: TextStyle(
+                          color: _editing ? AppTheme.primary : AppTheme.muted,
+                          decoration: _editing ? TextDecoration.underline : null,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        if (_workout!.endedAt != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.gold.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              formatDuration(
-                                  _workout!.endedAt!.difference(_workout!.startedAt)),
-                              style: const TextStyle(
-                                  color: AppTheme.gold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14),
+                        if ((_editEndedAt ?? _workout!.endedAt) != null)
+                          GestureDetector(
+                            onTap: _editing ? _pickEndTime : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.gold.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: _editing ? Border.all(color: AppTheme.gold.withValues(alpha: 0.5)) : null,
+                              ),
+                              child: Text(
+                                formatDuration(
+                                    (_editEndedAt ?? _workout!.endedAt!).difference(_editStartedAt ?? _workout!.startedAt)),
+                                style: const TextStyle(
+                                    color: AppTheme.gold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14),
+                              ),
                             ),
                           ),
                         const SizedBox(width: 12),
@@ -311,7 +366,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                   const Spacer(),
                   ElevatedButton(
-                    onPressed: () => setState(() => _editing = true),
+            onPressed: () => setState(() {
+                  _editing = true;
+                  _editStartedAt = _workout!.startedAt;
+                  _editEndedAt = _workout!.endedAt;
+                }),
                     child: const Text('Bearbeiten'),
                   ),
                 ],
