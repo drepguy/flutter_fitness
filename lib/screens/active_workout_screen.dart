@@ -46,6 +46,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final ValueNotifier<int> _elapsedSeconds = ValueNotifier(0);
   final List<WorkoutSet> _pendingDeletes = [];
   Timer? _deleteTimer;
+  Timer? _snackTimer;
 
   static final _setBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(4),
@@ -435,6 +436,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       AppTheme.undoSnackBar(
         message: 'Satz ${set.setNo} gelöscht',
         onUndo: () {
+          _snackTimer?.cancel();
           _pendingDeletes.remove(set);
           _deleteTimer?.cancel();
           setState(() => ae.sets.add(set));
@@ -443,6 +445,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         },
       ),
     );
+
+    _snackTimer?.cancel();
+    _snackTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted) messenger.hideCurrentSnackBar();
+    });
 
     _deleteTimer?.cancel();
     _deleteTimer = Timer(const Duration(seconds: 8), () async {
