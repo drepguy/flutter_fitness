@@ -21,7 +21,7 @@ class AnalyseScreen extends StatefulWidget {
 class _AnalyseScreenState extends State<AnalyseScreen> {
   List<Gym> _gyms = [];
   int? _selectedGymId;
-  int _daysFilter = 9999;
+  int _daysFilter = 365;
   Exercise? _selectedExercise;
   String _metric = 'e1rm';
 
@@ -288,7 +288,9 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               _buildFilterChip('12W', 84),
               _buildFilterChip('6M', 180),
               _buildFilterChip('1J', 365),
-              _buildFilterChip('Alle', 9999),
+              _buildFilterChip('2J', 730),
+              _buildFilterChip('3J', 1095),
+              _buildFilterChip('5J', 1825),
             ],
           ),
           const SizedBox(height: 16),
