@@ -60,7 +60,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _loadRestPresets();
     if (widget.workout != null) {
       _workout = widget.workout!;
-      _startStopwatch();
+      if (_workout.endedAt == null) _startStopwatch();
       _loadExercises();
     } else {
       _createWorkout();
