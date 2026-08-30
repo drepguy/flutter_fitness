@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../database/app_database.dart';
 
 class ExportService {
@@ -6,13 +8,20 @@ class ExportService {
 
   ExportService(this.db);
 
-  Future<String> exportAsJson() async {
+  Future<File> exportAsJsonFile() async {
+    final json = await _buildJson();
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/flutter_fitness_export.json');
+    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(json));
+    return file;
+  }
+
+  Future<Map<String, dynamic>> _buildJson() async {
     final data = <String, dynamic>{
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
     };
 
-    // Gyms
     final gyms = await db.select(db.gyms).get();
     data['gyms'] = gyms.map((g) => {
       'id': g.id,
@@ -22,7 +31,6 @@ class ExportService {
       'createdAt': g.createdAt.toIso8601String(),
     }).toList();
 
-    // Exercises
     final exercises = await db.select(db.exercises).get();
     data['exercises'] = exercises.map((e) => {
       'id': e.id,
@@ -34,7 +42,6 @@ class ExportService {
       'createdAt': e.createdAt.toIso8601String(),
     }).toList();
 
-    // Exercise Aliases
     final aliases = await db.select(db.exerciseAliases).get();
     data['exerciseAliases'] = aliases.map((a) => {
       'id': a.id,
@@ -43,7 +50,6 @@ class ExportService {
       'createdAt': a.createdAt.toIso8601String(),
     }).toList();
 
-    // Workouts
     final workouts = await db.select(db.workouts).get();
     data['workouts'] = workouts.map((w) => {
       'id': w.id,
@@ -54,7 +60,6 @@ class ExportService {
       'createdAt': w.createdAt.toIso8601String(),
     }).toList();
 
-    // Workout Exercises
     final wes = await db.select(db.workoutExercises).get();
     data['workoutExercises'] = wes.map((we) => {
       'id': we.id,
@@ -64,7 +69,6 @@ class ExportService {
       'notes': we.notes,
     }).toList();
 
-    // Workout Sets
     final sets = await db.select(db.workoutSets).get();
     data['workoutSets'] = sets.map((s) => {
       'id': s.id,
@@ -79,7 +83,6 @@ class ExportService {
       'createdAt': s.createdAt.toIso8601String(),
     }).toList();
 
-    // Workout Templates
     final templates = await db.select(db.workoutTemplates).get();
     data['workoutTemplates'] = templates.map((t) => {
       'id': t.id,
@@ -89,7 +92,6 @@ class ExportService {
       'updatedAt': t.updatedAt.toIso8601String(),
     }).toList();
 
-    // Workout Template Exercises
     final tExercises = await db.select(db.workoutTemplateExercises).get();
     data['workoutTemplateExercises'] = tExercises.map((te) => {
       'id': te.id,
@@ -98,6 +100,6 @@ class ExportService {
       'orderIdx': te.orderIdx,
     }).toList();
 
-    return const JsonEncoder.withIndent('  ').convert(data);
+    return data;
   }
 }

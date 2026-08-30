@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -43,62 +45,39 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showImportDialog() async {
-    final textController = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Daten importieren'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: TextField(
-            controller: textController,
-            maxLines: null,
-            expands: true,
-            decoration: const InputDecoration(
-              hintText: 'JSON-Daten hier einfügen...',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Importieren'),
-          ),
-        ],
-      ),
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
     );
+    if (files.isEmpty) return;
 
-    if (confirmed == true && textController.text.isNotEmpty) {
-      try {
-        final service = ImportService(widget.db);
-        final count = await service.importJson(textController.text);
-        _loadData();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$count Datensätze importiert')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fehler: $e')),
-          );
-        }
+    final file = files.first;
+    if (file.path == null) return;
+
+    try {
+      final content = await File(file.path!).readAsString();
+      final service = ImportService(widget.db);
+      final count = await service.importJson(content);
+      _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$count Datensätze importiert')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')),
+        );
       }
     }
   }
 
   Future<void> _exportAndShare() async {
     final service = ExportService(widget.db);
-    final json = await service.exportAsJson();
+    final file = await service.exportAsJsonFile();
     await SharePlus.instance.share(
-      ShareParams(text: json, subject: 'Flutter Fitness Export'),
+      ShareParams(files: [XFile(file.path)], subject: 'Flutter Fitness Export'),
     );
   }
 
