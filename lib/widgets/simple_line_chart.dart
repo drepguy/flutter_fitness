@@ -14,7 +14,7 @@ class SimpleLineChart extends StatefulWidget {
 class _SimpleLineChartState extends State<SimpleLineChart> {
   int? _selectedIndex;
 
-  static const double _chartLeft = 36.0;
+  static const double _chartLeft = 24.0;
   static const double _chartRight = 16.0;
   static const double _chartTop = 8.0;
   static const double _chartBottom = 40.0;
