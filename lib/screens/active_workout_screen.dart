@@ -432,19 +432,15 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      SnackBar(
-        content: Text('Satz ${set.setNo} gelöscht'),
-        duration: const Duration(seconds: 8),
-        action: SnackBarAction(
-          label: 'Rückgängig',
-          onPressed: () {
-            _pendingDeletes.remove(set);
-            _deleteTimer?.cancel();
-            setState(() => ae.sets.add(set));
-            ae.sets.sort((a, b) => a.setNo.compareTo(b.setNo));
-            _renumberSets(ae.workoutExercise.id);
-          },
-        ),
+      AppTheme.undoSnackBar(
+        message: 'Satz ${set.setNo} gelöscht',
+        onUndo: () {
+          _pendingDeletes.remove(set);
+          _deleteTimer?.cancel();
+          setState(() => ae.sets.add(set));
+          ae.sets.sort((a, b) => a.setNo.compareTo(b.setNo));
+          _renumberSets(ae.workoutExercise.id);
+        },
       ),
     );
 

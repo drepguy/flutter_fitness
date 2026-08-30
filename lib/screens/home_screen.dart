@@ -523,25 +523,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
-    final snackBar = SnackBar(
-      content: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          '${toDelete.length} Training gelöscht',
-          style: const TextStyle(fontSize: 15),
-        ),
-      ),
-      duration: const Duration(seconds: 8),
-      action: SnackBarAction(
-        label: 'Rückgängig',
-        onPressed: () async {
-          _snackTimer?.cancel();
-          for (final workout in toDelete) {
-            await widget.db.into(widget.db.workouts).insert(workout);
-          }
-          _loadData();
-        },
-      ),
+    final snackBar = AppTheme.undoSnackBar(
+      message: '${toDelete.length} Training gelöscht',
+      onUndo: () async {
+        _snackTimer?.cancel();
+        for (final workout in toDelete) {
+          await widget.db.into(widget.db.workouts).insert(workout);
+        }
+        _loadData();
+      },
     );
     messenger.showSnackBar(snackBar);
 

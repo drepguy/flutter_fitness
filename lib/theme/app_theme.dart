@@ -97,4 +97,19 @@ class AppTheme {
       ),
     );
   }
+
+  static SnackBar undoSnackBar({
+    required String message,
+    required VoidCallback onUndo,
+    Duration duration = const Duration(seconds: 8),
+  }) {
+    return SnackBar(
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(message, style: const TextStyle(fontSize: 15)),
+      ),
+      duration: duration,
+      action: SnackBarAction(label: 'Rückgängig', onPressed: onUndo),
+    );
+  }
 }
