@@ -533,9 +533,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Widget _buildExerciseCard(_ActiveExercise ae) {
     final idx = _exercises.indexOf(ae) + 1;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+    return RepaintBoundary(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,6 +593,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
