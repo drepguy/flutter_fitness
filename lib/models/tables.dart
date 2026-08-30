@@ -45,6 +45,7 @@ class WorkoutExercises extends Table {
   IntColumn get workoutId => integer().references(Workouts, #id, onDelete: KeyAction.cascade)();
   IntColumn get exerciseId => integer().references(Exercises, #id)();
   IntColumn get orderIdx => integer()();
+  TextColumn get notes => text().nullable()();
 }
 
 class WorkoutSets extends Table {

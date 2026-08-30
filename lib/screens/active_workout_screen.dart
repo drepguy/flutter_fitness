@@ -36,6 +36,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Timer? _restTimer;
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
+  final Map<int, TextEditingController> _noteControllers = {};
   List<int> _restPresets = [30, 60, 90, 120];
   final ScrollController _scrollController = ScrollController();
 
@@ -78,12 +79,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _stopwatchTimer?.cancel();
     _restTimer?.cancel();
     _scrollController.dispose();
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
-    for (final f in _focusNodes.values) {
-      f.dispose();
-    }
+    for (final c in _controllers.values) { c.dispose(); }
+    for (final f in _focusNodes.values) { f.dispose(); }
+    for (final c in _noteControllers.values) { c.dispose(); }
     super.dispose();
   }
 
@@ -233,6 +231,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         exercise: exercise,
         sets: sets,
       ));
+      _noteControllers[we.id] = TextEditingController(text: we.notes ?? '');
     }
     setState(() => _exercises = activeExercises);
   }
@@ -255,6 +254,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         exercise: exercise,
         sets: [],
       ));
+      _noteControllers[we.id] = TextEditingController();
     });
     _scrollToBottom();
   }
@@ -580,6 +580,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 child: const Text('Satz'),
               ),
             ),
+            _buildNoteField(ae),
           ],
         ),
       ),
@@ -640,7 +641,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final f = _getFocusNodes(set);
     final timeStr =
         '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
-    final isComplete = set.reps > 0 && set.weightKg > 0;
     final isEven = set.setNo % 2 == 0;
     return Padding(
       padding: EdgeInsets.zero,
@@ -752,21 +752,55 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ),
             SizedBox(
               width: 32,
-              child: isComplete
-                  ? const Icon(Icons.check_circle,
-                      size: 20, color: AppTheme.success)
-                  : IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.close,
-                          size: 18, color: AppTheme.error),
-                      onPressed: () => _deleteSet(set, ae),
-                    ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
+                onPressed: () => _deleteSet(set, ae),
+              ),
             ),
           ],
         ),
       ),
     ),
     );
+  }
+
+  Widget _buildNoteField(_ActiveExercise ae) {
+    final controller =
+        _noteControllers.putIfAbsent(ae.workoutExercise.id, () => TextEditingController());
+    if (controller.text.isEmpty && (ae.workoutExercise.notes ?? '').isNotEmpty) {
+      controller.text = ae.workoutExercise.notes!;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(fontSize: 13),
+        decoration: InputDecoration(
+          hintText: 'Notiz...',
+          hintStyle: TextStyle(color: AppTheme.muted.withValues(alpha: 0.5)),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          border: InputBorder.none,
+          suffixIcon: controller.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    controller.clear();
+                    _saveExerciseNote(ae, '');
+                  },
+                  child: const Icon(Icons.close, size: 16, color: AppTheme.muted),
+                )
+              : null,
+        ),
+        onChanged: (v) => _saveExerciseNote(ae, v),
+      ),
+    );
+  }
+
+  void _saveExerciseNote(_ActiveExercise ae, String note) {
+    (widget.db.update(widget.db.workoutExercises)
+          ..where((we) => we.id.equals(ae.workoutExercise.id)))
+        .write(WorkoutExercisesCompanion(notes: Value(note.isEmpty ? null : note)));
   }
 
   Widget _buildBottomBar() {

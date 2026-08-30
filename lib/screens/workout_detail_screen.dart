@@ -208,6 +208,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   children: [
                     Text(de.exercise.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (de.we.notes != null && de.we.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(de.we.notes!,
+                          style: const TextStyle(
+                              color: AppTheme.muted,
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic)),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: const [
