@@ -369,7 +369,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ..where((s) => s.id.equals(setId)))
         .getSingle();
     setState(() => ae.sets.add(set));
-    _scrollToExercise(ae);
+    if (ae == _exercises.last) {
+      _scrollToBottom();
+    }
   }
 
   Future<WorkoutSet?> _getGhostData(_ActiveExercise ae) async {
