@@ -73,6 +73,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _exportAndSave() async {
+    final service = ExportService(widget.db);
+    final file = await service.exportAsJsonFile();
+    final uri = await FilePicker.saveFile(
+      fileName: 'flutter_fitness_export.json',
+      bytes: await file.readAsBytes(),
+    );
+    if (uri != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gespeichert: ${uri.path}')),
+      );
+    }
+  }
+
   Future<void> _exportAndShare() async {
     final service = ExportService(widget.db);
     final file = await service.exportAsJsonFile();
@@ -149,6 +163,10 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.upload_file),
               onPressed: () => _showImportDialog(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.save_alt),
+              onPressed: () => _exportAndSave(),
             ),
             IconButton(
               icon: const Icon(Icons.share),
