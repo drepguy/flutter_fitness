@@ -361,6 +361,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ),
         );
     await _renumberSets(ae.workoutExercise.id);
+    final pendingIds = _pendingDeletes.map((s) => s.id).toSet();
     final sets = await (widget.db.select(widget.db.workoutSets)
           ..where((s) => s.workoutExerciseId.equals(ae.workoutExercise.id))
           ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
@@ -368,7 +369,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     setState(() {
       ae.sets
         ..clear()
-        ..addAll(sets);
+        ..addAll(sets.where((s) => !pendingIds.contains(s.id)));
     });
     if (ae == _exercises.last) {
       _scrollToBottom();
@@ -464,14 +465,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Future<void> _renumberSets(int workoutExerciseId) async {
-    final sets = await (widget.db.select(widget.db.workoutSets)
+    final allSets = await (widget.db.select(widget.db.workoutSets)
           ..where((s) => s.workoutExerciseId.equals(workoutExerciseId))
           ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
         .get();
-    for (int i = 0; i < sets.length; i++) {
-      if (sets[i].setNo != i + 1) {
+    final pendingIds = _pendingDeletes.map((s) => s.id).toSet();
+    final activeSets = allSets.where((s) => !pendingIds.contains(s.id)).toList();
+    for (int i = 0; i < activeSets.length; i++) {
+      if (activeSets[i].setNo != i + 1) {
         await (widget.db.update(widget.db.workoutSets)
-              ..where((s) => s.id.equals(sets[i].id)))
+              ..where((s) => s.id.equals(activeSets[i].id)))
             .write(WorkoutSetsCompanion(setNo: Value(i + 1)));
       }
     }
