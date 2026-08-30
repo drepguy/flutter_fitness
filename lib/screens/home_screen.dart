@@ -28,11 +28,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
+  Timer? _snackTimer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _snackTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _showImportDialog() async {
@@ -515,26 +522,27 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          '${toDelete.length} Training gelöscht',
-          style: const TextStyle(color: Colors.white, fontSize: 15),
-        ),
-        backgroundColor: const Color(0xFF323232),
-        duration: const Duration(seconds: 8),
-        action: SnackBarAction(
-          label: 'Rückgängig',
-          textColor: AppTheme.primary,
-          onPressed: () async {
-            for (final workout in toDelete) {
-              await widget.db.into(widget.db.workouts).insert(workout);
-            }
-            _loadData();
-          },
-        ),
+
+    final snackBar = SnackBar(
+      content: Text('${toDelete.length} Training gelöscht'),
+      duration: const Duration(seconds: 8),
+      action: SnackBarAction(
+        label: 'Rückgängig',
+        onPressed: () async {
+          _snackTimer?.cancel();
+          for (final workout in toDelete) {
+            await widget.db.into(widget.db.workouts).insert(workout);
+          }
+          _loadData();
+        },
       ),
     );
+    messenger.showSnackBar(snackBar);
+
+    _snackTimer?.cancel();
+    _snackTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted) messenger.hideCurrentSnackBar();
+    });
 
     for (final workout in toDelete) {
       await (widget.db.delete(widget.db.workouts)
