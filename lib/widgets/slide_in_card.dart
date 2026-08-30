@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class SlideInCard extends StatefulWidget {
+class SlideInCard extends StatelessWidget {
   final Widget child;
   final int index;
   final Duration delay;
@@ -13,47 +13,20 @@ class SlideInCard extends StatefulWidget {
   });
 
   @override
-  State<SlideInCard> createState() => _SlideInCardState();
-}
-
-class _SlideInCardState extends State<SlideInCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacity;
-  late Animation<Offset> _offset;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _offset = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(widget.delay * widget.index, () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacity,
-      child: SlideTransition(
-        position: _offset,
-        child: widget.child,
-      ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+      builder: (context, value, _) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 12 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
