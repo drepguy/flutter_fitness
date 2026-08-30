@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
@@ -511,12 +512,20 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIds.clear();
     });
 
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
-        content: Text('${toDelete.length} Training gelöscht'),
+        content: Text(
+          '${toDelete.length} Training gelöscht',
+          style: const TextStyle(color: Colors.white, fontSize: 15),
+        ),
+        backgroundColor: const Color(0xFF323232),
+        duration: const Duration(seconds: 8),
         action: SnackBarAction(
           label: 'Rückgängig',
+          textColor: AppTheme.primary,
           onPressed: () async {
             for (final workout in toDelete) {
               await widget.db.into(widget.db.workouts).insert(workout);
@@ -524,7 +533,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadData();
           },
         ),
-        duration: const Duration(seconds: 5),
       ),
     );
 
