@@ -349,7 +349,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Future<void> _addSet(_ActiveExercise ae) async {
     final ghostData = await _getGhostData(ae);
-    final setNo = ae.sets.length + 1;
+    final setNo = ae.sets.isEmpty ? 1 : ae.sets.map((s) => s.setNo).reduce((a, b) => a > b ? a : b) + 1;
 
     final setId = await widget.db.into(widget.db.workoutSets).insert(
           WorkoutSetsCompanion.insert(
