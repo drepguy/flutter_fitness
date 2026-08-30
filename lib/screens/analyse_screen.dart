@@ -105,6 +105,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
       ..where(
           widget.db.workoutExercises.exerciseId.equals(_selectedExercise!.id) &
           widget.db.workoutSets.isWarmup.equals(false) &
+          widget.db.workoutSets.rpe.isBiggerOrEqualValue(7) &
           widget.db.workouts.endedAt.isNotNull() &
           (_selectedGymId != null
               ? widget.db.workouts.gymId.equals(_selectedGymId!)
