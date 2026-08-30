@@ -366,11 +366,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                   const Spacer(),
                   ElevatedButton(
-            onPressed: () => setState(() {
-                  _editing = true;
-                  _editStartedAt = _workout!.startedAt;
-                  _editEndedAt = _workout!.endedAt;
-                }),
+                    onPressed: () => setState(() {
+                      _editing = true;
+                      _editStartedAt = _workout!.startedAt;
+                      _editEndedAt = _workout!.endedAt;
+                    }),
                     child: const Text('Bearbeiten'),
                   ),
                 ],

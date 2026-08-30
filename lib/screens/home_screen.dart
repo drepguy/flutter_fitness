@@ -9,6 +9,7 @@ import '../utils/import_service.dart';
 import '../utils/export_service.dart';
 import '../widgets/slide_in_card.dart';
 import 'active_workout_screen.dart';
+import 'workout_detail_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -364,19 +365,31 @@ class _HomeScreenState extends State<HomeScreen> {
             });
             return;
           }
-          final gym = await (widget.db.select(widget.db.gyms)
-                ..where((g) => g.id.equals(workout.gymId!)))
-              .getSingle();
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ActiveWorkoutScreen(
-                db: widget.db,
-                gym: gym,
-                workout: workout,
+          if (workout.endedAt != null) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => WorkoutDetailScreen(
+                  db: widget.db,
+                  workoutId: workout.id,
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            final gym = await (widget.db.select(widget.db.gyms)
+                  ..where((g) => g.id.equals(workout.gymId!)))
+                .getSingle();
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ActiveWorkoutScreen(
+                  db: widget.db,
+                  gym: gym,
+                  workout: workout,
+                ),
+              ),
+            );
+          }
           _loadData();
         },
         child: Padding(
