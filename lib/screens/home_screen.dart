@@ -545,10 +545,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     final overlay = Overlay.of(context);
     _undoOverlay = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: 80,
-        left: 16,
-        right: 16,
+      builder: (context) => AnimatedBuilder(
+        animation: _undoAnimController,
+        builder: (context, child) {
+          final offset = _undoSlideAnimation.value;
+          return Positioned(
+            bottom: 80,
+            left: 16,
+            right: 16,
+            child: Transform.translate(
+              offset: Offset(
+                offset.dx * MediaQuery.of(context).size.width,
+                offset.dy * 200,
+              ),
+              child: Opacity(
+                opacity: 1.0 - _undoAnimController.value,
+                child: child,
+              ),
+            ),
+          );
+        },
         child: GestureDetector(
           onVerticalDragEnd: (details) {
             final v = details.primaryVelocity ?? 0;
@@ -558,9 +574,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             final v = details.primaryVelocity ?? 0;
             _animateDismissOut(v > 0 ? const Offset(1, 0) : const Offset(-1, 0));
           },
-          child: SlideTransition(
-            position: _undoSlideAnimation,
-            child: Material(
+          child: Material(
             color: Colors.transparent,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -597,7 +611,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
-      ),
     );
     overlay.insert(_undoOverlay!);
 
@@ -618,9 +631,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _undoAnimController.forward(from: 0).then((_) {
       _undoOverlay?.remove();
       _undoOverlay = null;
-    });
-    _undoAnimController.addListener(() {
-      _undoOverlay?.markNeedsBuild();
     });
   }
 
