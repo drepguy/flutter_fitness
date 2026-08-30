@@ -22,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Gym> _gyms = [];
   List<Workout> _recentWorkouts = [];
+  Map<int, String> _gymNames = {};
+  Map<int, Map<String, dynamic>> _workoutStats = {};
 
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
@@ -99,9 +101,21 @@ class _HomeScreenState extends State<HomeScreen> {
           ..limit(20))
         .get();
 
+    final gymNames = <int, String>{};
+    for (final g in gyms) {
+      gymNames[g.id] = g.name;
+    }
+
+    final stats = <int, Map<String, dynamic>>{};
+    for (final w in workouts) {
+      stats[w.id] = await _getWorkoutStats(w.id);
+    }
+
     setState(() {
       _gyms = gyms;
       _recentWorkouts = workouts;
+      _gymNames = gymNames;
+      _workoutStats = stats;
     });
   }
 
@@ -376,18 +390,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   Expanded(
-                    child: FutureBuilder<Gym?>(
-                      future: workout.gymId != null
-                          ? (widget.db.select(widget.db.gyms)
-                                ..where((g) => g.id.equals(workout.gymId!)))
-                              .getSingleOrNull()
-                          : Future.value(null),
-                      builder: (context, snap) {
-                        return Text(
-                          snap.data?.name ?? 'Kein Studio',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        );
-                      },
+                    child: Text(
+                      _gymNames[workout.gymId] ?? 'Kein Studio',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   Container(
@@ -435,22 +440,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
               if (!isActive) ...[
                 const SizedBox(height: 8),
-                FutureBuilder<Map<String, dynamic>>(
-                  future: _getWorkoutStats(workout.id),
-                  builder: (context, snap) {
-                    if (!snap.hasData) return const SizedBox();
-                    final stats = snap.data!;
-                    final exerciseCount = stats['exerciseCount'] as int;
-                    final volume = stats['totalVolume'] as double;
-                    return Row(
-                      children: [
-                        _buildStatChip(Icons.fitness_center, '$exerciseCount Übungen'),
-                        const SizedBox(width: 8),
-                        _buildStatChip(Icons.scale, '${formatVolume(volume)} kg'),
-                      ],
-                    );
-                  },
-                ),
+                Builder(builder: (context) {
+                  final stats = _workoutStats[workout.id];
+                  if (stats == null) return const SizedBox();
+                  final exerciseCount = stats['exerciseCount'] as int;
+                  final volume = stats['totalVolume'] as double;
+                  return Row(
+                    children: [
+                      _buildStatChip(Icons.fitness_center, '$exerciseCount Übungen'),
+                      const SizedBox(width: 8),
+                      _buildStatChip(Icons.scale, '${formatVolume(volume)} kg'),
+                    ],
+                  );
+                }),
               ],
             ],
           ),
