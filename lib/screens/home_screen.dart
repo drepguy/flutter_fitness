@@ -526,16 +526,15 @@ class _HomeScreenState extends State<HomeScreen> {
         bottom: 80,
         left: 16,
         right: 16,
-        child: Dismissible(
-          key: UniqueKey(),
-          direction: DismissDirection.horizontal,
-          onDismissed: (_) => _dismissUndoOverlay(),
+        child: GestureDetector(
+          onVerticalDragEnd: (_) => _dismissUndoOverlay(),
+          onHorizontalDragEnd: (_) => _dismissUndoOverlay(),
           child: Material(
             color: Colors.transparent,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF323232),
+                color: Theme.of(context).colorScheme.inverseSurface,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black54)],
               ),
@@ -544,7 +543,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Text(
                       '${toDelete.length} Training gelöscht',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onInverseSurface,
+                      ),
                     ),
                   ),
                   TextButton(
