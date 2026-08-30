@@ -63,7 +63,9 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
 
       final sets = await (widget.db.select(widget.db.workoutSets)
             ..where((s) =>
-                s.workoutExerciseId.equals(we.id) & s.isWarmup.equals(false))
+                s.workoutExerciseId.equals(we.id) &
+                s.isWarmup.equals(false) &
+                s.rpe.isBiggerOrEqualValue(7))
           ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
           .get();
 
@@ -317,6 +319,26 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               ],
             ),
           ],
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.filter_alt, size: 14, color: AppTheme.primary),
+                const SizedBox(width: 6),
+                Text('RPE ≥ 7',
+                    style: TextStyle(
+                        color: AppTheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           if (_selectedExercise != null)
             FutureBuilder<List<Map<String, dynamic>>>(
