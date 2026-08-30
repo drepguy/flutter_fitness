@@ -363,7 +363,10 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                           child: SimpleLineChart(
                             data: data.map((d) => d[_metric] as double).toList(),
                             labels: data
-                                .map((d) => formatDate(d['date'] as DateTime))
+                                .map((d) {
+                                  final dt = d['date'] as DateTime;
+                                  return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}';
+                                })
                                 .toList(),
                           ),
                         ),
