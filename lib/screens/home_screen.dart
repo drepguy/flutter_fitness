@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
@@ -20,6 +21,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  OverlayEntry? _undoOverlay;
+  Timer? _undoTimer;
   List<Gym> _gyms = [];
   List<Workout> _recentWorkouts = [];
   Map<int, String> _gymNames = {};
@@ -32,6 +35,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _undoTimer?.cancel();
+    _undoOverlay?.remove();
+    super.dispose();
   }
 
   Future<void> _showImportDialog() async {
@@ -501,6 +511,66 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
+  void _dismissUndoOverlay() {
+    _undoTimer?.cancel();
+    _undoOverlay?.remove();
+    _undoOverlay = null;
+  }
+
+  void _showUndoOverlay(List<dynamic> toDelete) {
+    _dismissUndoOverlay();
+
+    final overlay = Overlay.of(context);
+    _undoOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 80,
+        left: 16,
+        right: 16,
+        child: Dismissible(
+          key: UniqueKey(),
+          direction: DismissDirection.horizontal,
+          onDismissed: (_) => _dismissUndoOverlay(),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black54)],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${toDelete.length} Training gelöscht',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      _dismissUndoOverlay();
+                      for (final workout in toDelete) {
+                        await widget.db.into(widget.db.workouts).insert(workout);
+                      }
+                      _loadData();
+                    },
+                    child: const Text('Rückgängig'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_undoOverlay!);
+
+    _undoTimer = Timer(const Duration(seconds: 10), () {
+      _dismissUndoOverlay();
+    });
+  }
+
   Future<void> _deleteSelectedWorkouts() async {
     final toDelete = _recentWorkouts
         .where((w) => _selectedIds.contains(w.id))
@@ -512,29 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(
-            '${toDelete.length} Training gelöscht',
-            style: const TextStyle(fontSize: 15),
-          ),
-        ),
-        action: SnackBarAction(
-          label: 'Rückgängig',
-          onPressed: () async {
-            for (final workout in toDelete) {
-              await widget.db.into(widget.db.workouts).insert(workout);
-            }
-            _loadData();
-          },
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 10),
-      ),
-    );
+    _showUndoOverlay(toDelete);
 
     for (final workout in toDelete) {
       await (widget.db.delete(widget.db.workouts)
