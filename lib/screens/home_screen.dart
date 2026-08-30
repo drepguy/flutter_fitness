@@ -619,6 +619,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _undoOverlay?.remove();
       _undoOverlay = null;
     });
+    _undoAnimController.addListener(() {
+      _undoOverlay?.markNeedsBuild();
+    });
   }
 
   Future<void> _deleteSelectedWorkouts() async {
