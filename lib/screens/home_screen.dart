@@ -524,7 +524,13 @@ class _HomeScreenState extends State<HomeScreen> {
     messenger.clearSnackBars();
 
     final snackBar = SnackBar(
-      content: Text('${toDelete.length} Training gelöscht'),
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          '${toDelete.length} Training gelöscht',
+          style: const TextStyle(fontSize: 15),
+        ),
+      ),
       duration: const Duration(seconds: 8),
       action: SnackBarAction(
         label: 'Rückgängig',
