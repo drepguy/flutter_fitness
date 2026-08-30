@@ -32,8 +32,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
   int _restSeconds = 0;
-  bool _restRunning = false;
   Timer? _restTimer;
+  final ValueNotifier<int> _restDisplaySeconds = ValueNotifier(0);
+  final ValueNotifier<bool> _restDisplayRunning = ValueNotifier(false);
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
   final Map<int, TextEditingController> _noteControllers = {};
@@ -41,7 +42,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final ScrollController _scrollController = ScrollController();
 
   Timer? _stopwatchTimer;
-  int _elapsedSeconds = 0;
+  final ValueNotifier<int> _elapsedSeconds = ValueNotifier(0);
 
   static final _setBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(4),
@@ -79,6 +80,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _stopwatchTimer?.cancel();
     _restTimer?.cancel();
     _scrollController.dispose();
+    _elapsedSeconds.dispose();
+    _restDisplaySeconds.dispose();
+    _restDisplayRunning.dispose();
     for (final c in _controllers.values) { c.dispose(); }
     for (final f in _focusNodes.values) { f.dispose(); }
     for (final c in _noteControllers.values) { c.dispose(); }
@@ -87,27 +91,25 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   void _startRestTimer(int seconds) {
     _restTimer?.cancel();
-    setState(() {
-      _restSeconds = seconds;
-      _restRunning = true;
-    });
+    _restSeconds = seconds;
+    _restDisplaySeconds.value = seconds;
+    _restDisplayRunning.value = true;
     _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_restSeconds <= 0) {
         _restTimer?.cancel();
-        _restRunning = false;
+        _restDisplayRunning.value = false;
         _vibrate();
       } else {
-        setState(() => _restSeconds--);
+        _restSeconds--;
+        _restDisplaySeconds.value = _restSeconds;
       }
     });
   }
 
   void _cancelRestTimer() {
     _restTimer?.cancel();
-    setState(() {
-      _restRunning = false;
-      _restSeconds = 0;
-    });
+    _restDisplayRunning.value = false;
+    _restDisplaySeconds.value = 0;
   }
 
   Future<void> _vibrate() async {
@@ -163,10 +165,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   void _startStopwatch() {
     final diff = DateTime.now().difference(_workout.startedAt).inSeconds;
-    setState(() => _elapsedSeconds = diff > 0 ? diff : 0);
+    _elapsedSeconds.value = diff > 0 ? diff : 0;
     _stopwatchTimer?.cancel();
     _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _elapsedSeconds++);
+      if (mounted) _elapsedSeconds.value++;
     });
   }
 
@@ -464,13 +466,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: Text(
-                  _formatElapsed(_elapsedSeconds),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.secondary,
-                    fontFeatures: [FontFeature.tabularFigures()],
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _elapsedSeconds,
+                  builder: (context, val, _) => Text(
+                    _formatElapsed(val),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondary,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ),
@@ -841,42 +846,49 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 ],
               ),
             ),
-          if (_restRunning)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatRestTime(_restSeconds),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.secondary,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _restDisplayRunning,
+            builder: (context, running, _) {
+              if (running) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: _cancelRestTimer,
-                      child: const Icon(Icons.close,
-                          size: 20, color: AppTheme.secondary),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ValueListenableBuilder<int>(
+                          valueListenable: _restDisplaySeconds,
+                          builder: (context, secs, _) => Text(
+                            _formatRestTime(secs),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.secondary,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: _cancelRestTimer,
+                          child: const Icon(Icons.close,
+                              size: 20, color: AppTheme.secondary),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            )
-          else if (_exercises.any((e) => e.sets.isNotEmpty))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
+                  ),
+                );
+              }
+              if (_exercises.any((e) => e.sets.isNotEmpty)) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (int i = 0; i < _restPresets.length; i++) ...[
@@ -885,7 +897,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   ],
                 ],
               ),
-            ),
+            );
+              }
+              return const SizedBox.shrink();
+            }),
           Row(
             children: [
               OutlinedButton.icon(
