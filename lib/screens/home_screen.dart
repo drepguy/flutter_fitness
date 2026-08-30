@@ -20,9 +20,11 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   OverlayEntry? _undoOverlay;
   Timer? _undoTimer;
+  late AnimationController _undoAnimController;
+  late Animation<Offset> _undoSlideAnimation;
   List<Gym> _gyms = [];
   List<Workout> _recentWorkouts = [];
   Map<int, String> _gymNames = {};
@@ -34,6 +36,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _undoAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _undoSlideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _undoAnimController,
+      curve: Curves.easeOut,
+    ));
     _loadData();
   }
 
@@ -41,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _undoTimer?.cancel();
     _undoOverlay?.remove();
+    _undoAnimController.dispose();
     super.dispose();
   }
 
@@ -520,6 +534,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showUndoOverlay(List<dynamic> toDelete) {
     _dismissUndoOverlay();
 
+    _undoSlideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _undoAnimController,
+      curve: Curves.easeOut,
+    ));
+    _undoAnimController.value = 0;
+
     final overlay = Overlay.of(context);
     _undoOverlay = OverlayEntry(
       builder: (context) => Positioned(
@@ -527,9 +550,17 @@ class _HomeScreenState extends State<HomeScreen> {
         left: 16,
         right: 16,
         child: GestureDetector(
-          onVerticalDragEnd: (_) => _dismissUndoOverlay(),
-          onHorizontalDragEnd: (_) => _dismissUndoOverlay(),
-          child: Material(
+          onVerticalDragEnd: (details) {
+            final v = details.primaryVelocity ?? 0;
+            _animateDismissOut(v > 0 ? const Offset(0, 1) : const Offset(0, -1));
+          },
+          onHorizontalDragEnd: (details) {
+            final v = details.primaryVelocity ?? 0;
+            _animateDismissOut(v > 0 ? const Offset(1, 0) : const Offset(-1, 0));
+          },
+          child: SlideTransition(
+            position: _undoSlideAnimation,
+            child: Material(
             color: Colors.transparent,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -552,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   TextButton(
                     onPressed: () async {
-                      _dismissUndoOverlay();
+                      _animateDismissOut(Offset.zero);
                       for (final workout in toDelete) {
                         await widget.db.into(widget.db.workouts).insert(workout);
                       }
@@ -566,11 +597,27 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      ),
     );
     overlay.insert(_undoOverlay!);
 
     _undoTimer = Timer(const Duration(seconds: 10), () {
-      _dismissUndoOverlay();
+      _animateDismissOut(const Offset(0, 1));
+    });
+  }
+
+  void _animateDismissOut(Offset direction) {
+    _undoTimer?.cancel();
+    _undoSlideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: direction,
+    ).animate(CurvedAnimation(
+      parent: _undoAnimController,
+      curve: Curves.easeOut,
+    ));
+    _undoAnimController.forward(from: 0).then((_) {
+      _undoOverlay?.remove();
+      _undoOverlay = null;
     });
   }
 
