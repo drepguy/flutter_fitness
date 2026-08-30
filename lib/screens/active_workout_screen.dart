@@ -39,6 +39,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final Map<int, TextEditingController> _noteControllers = {};
   List<int> _restPresets = [30, 60, 90, 120];
   final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _exerciseCardKeys = {};
 
   Timer? _stopwatchTimer;
   int _elapsedSeconds = 0;
@@ -194,6 +195,22 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     });
   }
 
+  void _scrollToExercise(_ActiveExercise ae) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final key = _exerciseCardKeys[ae.workoutExercise.id];
+        if (key?.currentContext != null) {
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: 0.2,
+          );
+        }
+      });
+    });
+  }
+
   Future<void> _createWorkout() async {
     final now = DateTime.now();
     final id = await widget.db.into(widget.db.workouts).insert(
@@ -232,6 +249,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         sets: sets,
       ));
       _noteControllers[we.id] = TextEditingController(text: we.notes ?? '');
+      _exerciseCardKeys.putIfAbsent(we.id, () => GlobalKey());
     }
     setState(() => _exercises = activeExercises);
   }
@@ -255,6 +273,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         sets: [],
       ));
       _noteControllers[we.id] = TextEditingController();
+      _exerciseCardKeys[we.id] = GlobalKey();
     });
     _scrollToBottom();
   }
@@ -350,7 +369,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ..where((s) => s.id.equals(setId)))
         .getSingle();
     setState(() => ae.sets.add(set));
-    _scrollToBottom();
+    _scrollToExercise(ae);
   }
 
   Future<WorkoutSet?> _getGhostData(_ActiveExercise ae) async {
@@ -525,7 +544,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Widget _buildExerciseCard(_ActiveExercise ae) {
     final idx = _exercises.indexOf(ae) + 1;
+    final key = _exerciseCardKeys[ae.workoutExercise.id] ?? GlobalKey();
     return Card(
+      key: key,
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
