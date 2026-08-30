@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
+import 'utils/backup_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/exercise_list_screen.dart';
 import 'screens/analyse_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/analyse_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final db = AppDatabase();
+  BackupService(db).autoBackupIfNeeded();
   runApp(MyApp(db: db));
 }
 

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
+import '../utils/backup_service.dart';
 import '../widgets/gym_edit_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,6 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _vibCount = 4;
   int _vibGap = 600;
   List<int> _restPresets = [30, 60, 90, 120];
+  bool _autoBackupEnabled = true;
+  List<BackupEntry> _backups = [];
 
   @override
   void initState() {
@@ -28,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadData();
     _loadVibrationSettings();
     _loadRestPresets();
+    _loadBackupData();
   }
 
   Future<void> _loadData() async {
@@ -65,6 +69,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('vib_duration', _vibDuration);
     await prefs.setInt('vib_count', _vibCount);
     await prefs.setInt('vib_gap', _vibGap);
+  }
+
+  Future<void> _loadBackupData() async {
+    final backupService = BackupService(widget.db);
+    final enabled = await backupService.isAutoBackupEnabled();
+    final backups = await backupService.listBackups();
+    setState(() {
+      _autoBackupEnabled = enabled;
+      _backups = backups;
+    });
+  }
+
+  Future<void> _toggleAutoBackup(bool value) async {
+    final backupService = BackupService(widget.db);
+    await backupService.setAutoBackupEnabled(value);
+    setState(() => _autoBackupEnabled = value);
+  }
+
+  Future<void> _createBackup() async {
+    final backupService = BackupService(widget.db);
+    await backupService.saveBackup();
+    await _loadBackupData();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup erstellt')),
+      );
+    }
+  }
+
+  Future<void> _restoreBackup(BackupEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backup wiederherstellen?'),
+        content: Text('Daten von ${entry.dateLabel} werden importiert. Bestehende Einträge werden nicht überschrieben.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Wiederherstellen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final backupService = BackupService(widget.db);
+      await backupService.restoreBackup(entry.file);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup wiederhergestellt')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteBackup(BackupEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backup löschen?'),
+        content: Text('${entry.name} wird gelöscht.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final backupService = BackupService(widget.db);
+      await backupService.deleteBackup(entry.file);
+      await _loadBackupData();
+    }
   }
 
   void _testVibration() async {
@@ -130,6 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildRestTimerSection(),
           const SizedBox(height: 12),
           _buildVibrationSection(),
+          const SizedBox(height: 12),
+          _buildBackupSection(),
           const SizedBox(height: 12),
           _buildGymSection(),
         ],
@@ -303,6 +391,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBackupSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.cloud_upload, color: AppTheme.primary),
+                SizedBox(width: 8),
+                Text('Backup',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Automatisches Backup'),
+              subtitle: const Text('Täglich beim Start',
+                  style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+              value: _autoBackupEnabled,
+              onChanged: _toggleAutoBackup,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _createBackup,
+                icon: const Icon(Icons.save_alt, size: 18),
+                label: const Text('Jetzt sichern'),
+              ),
+            ),
+            if (_backups.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('Bestehende Backups',
+                  style: TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...(_backups.map((entry) => Card(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    child: ListTile(
+                      dense: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                      title: Text(entry.dateLabel,
+                          style: const TextStyle(fontSize: 13)),
+                      subtitle: Text(entry.sizeLabel,
+                          style: TextStyle(
+                              color: AppTheme.muted, fontSize: 11)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.restore, size: 18),
+                            onPressed: () => _restoreBackup(entry),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete,
+                                size: 18, color: AppTheme.error),
+                            onPressed: () => _deleteBackup(entry),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ))),
+            ],
+          ],
+        ),
       ),
     );
   }

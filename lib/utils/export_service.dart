@@ -9,14 +9,14 @@ class ExportService {
   ExportService(this.db);
 
   Future<File> exportAsJsonFile() async {
-    final json = await _buildJson();
+    final json = await buildJson();
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/flutter_fitness_export.json');
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(json));
     return file;
   }
 
-  Future<Map<String, dynamic>> _buildJson() async {
+  Future<Map<String, dynamic>> buildJson() async {
     final data = <String, dynamic>{
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
