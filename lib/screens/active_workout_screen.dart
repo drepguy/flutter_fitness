@@ -706,18 +706,20 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               SizedBox(width: 32),
             ],
           ),
-          for (final set in ae.sets) _buildSetRow(set, ae),
+          for (final entry in ae.sets.asMap().entries)
+            _buildSetRow(entry.value, ae, entry.key),
         ],
       ),
     );
   }
 
-  Widget _buildSetRow(WorkoutSet set, _ActiveExercise ae) {
+  Widget _buildSetRow(WorkoutSet set, _ActiveExercise ae, int index) {
     final c = _getControllers(set);
     final f = _getFocusNodes(set);
     final timeStr =
         '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
-    final isEven = set.setNo % 2 == 0;
+    final displayNo = index + 1;
+    final isEven = displayNo % 2 == 0;
     return SizedBox(
       height: 44,
       child: Container(
@@ -732,7 +734,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${set.setNo}',
+                    '$displayNo',
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primary,
