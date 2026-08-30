@@ -290,7 +290,6 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               _buildFilterChip('1J', 365),
               _buildFilterChip('2J', 730),
               _buildFilterChip('3J', 1095),
-              _buildFilterChip('5J', 1825),
             ],
           ),
           const SizedBox(height: 16),
