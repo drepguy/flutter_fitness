@@ -514,7 +514,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${toDelete.length} Training gelöscht'),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            '${toDelete.length} Training gelöscht',
+            style: const TextStyle(fontSize: 15),
+          ),
+        ),
         action: SnackBarAction(
           label: 'Rückgängig',
           onPressed: () async {
@@ -524,7 +530,9 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadData();
           },
         ),
-        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 10),
       ),
     );
 
