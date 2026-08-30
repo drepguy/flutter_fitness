@@ -525,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final snackBar = SnackBar(
       content: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
           '${toDelete.length} Training gelöscht',
           style: const TextStyle(fontSize: 15),
