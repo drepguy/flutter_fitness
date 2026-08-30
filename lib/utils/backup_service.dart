@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
 import 'export_service.dart';
@@ -13,11 +12,9 @@ class BackupService {
   BackupService(this.db);
 
   static const _autoBackupKey = 'auto_backup_enabled';
-  static const _folderName = 'FlutterFitness';
 
   Future<Directory> get _backupDir async {
-    final extDir = await getExternalStorageDirectory();
-    final dir = Directory('${extDir!.path}/$_folderName');
+    final dir = Directory('/storage/emulated/0/Documents/Flutter_Fitness');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
