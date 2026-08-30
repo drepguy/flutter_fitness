@@ -44,6 +44,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Timer? _stopwatchTimer;
   final ValueNotifier<int> _elapsedSeconds = ValueNotifier(0);
+  final List<WorkoutSet> _pendingDeletes = [];
+  Timer? _deleteTimer;
 
   static final _setBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(4),
@@ -85,6 +87,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   void dispose() {
     _stopwatchTimer?.cancel();
     _restTimer?.cancel();
+    _deleteTimer?.cancel();
     _scrollController.dispose();
     _elapsedSeconds.dispose();
     _restDisplaySeconds.dispose();
@@ -417,14 +420,48 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Future<void> _deleteSet(WorkoutSet set, _ActiveExercise ae) async {
     _controllers.remove(set.id)?.dispose();
     _focusNodes.remove(set.id)?.dispose();
-    await (widget.db.delete(widget.db.workoutSets)
-          ..where((s) => s.id.equals(set.id)))
-        .go();
     setState(() => ae.sets.remove(set));
+    _pendingDeletes.add(set);
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Satz ${set.setNo} gelöscht'),
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Rückgängig',
+          onPressed: () {
+            _pendingDeletes.remove(set);
+            _deleteTimer?.cancel();
+            setState(() => ae.sets.add(set));
+            ae.sets.sort((a, b) => a.setNo.compareTo(b.setNo));
+          },
+        ),
+      ),
+    );
+
+    _deleteTimer?.cancel();
+    _deleteTimer = Timer(const Duration(seconds: 8), () async {
+      for (final s in List.of(_pendingDeletes)) {
+        await (widget.db.delete(widget.db.workoutSets)
+              ..where((ws) => ws.id.equals(s.id)))
+            .go();
+      }
+      _pendingDeletes.clear();
+    });
   }
 
   Future<void> _finishWorkout(String? notes) async {
     setState(() => _saving = true);
+    _deleteTimer?.cancel();
+    for (final s in _pendingDeletes) {
+      await (widget.db.delete(widget.db.workoutSets)
+            ..where((ws) => ws.id.equals(s.id)))
+          .go();
+    }
+    _pendingDeletes.clear();
 
     final updates = WorkoutsCompanion(
       notes: notes != null ? Value(notes) : const Value.absent(),
@@ -458,6 +495,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Future<void> _cancelWorkout() async {
+    _deleteTimer?.cancel();
+    _pendingDeletes.clear();
     await (widget.db.delete(widget.db.workoutSets)
           ..where((s) =>
               s.workoutExerciseId.isIn(_exercises.map((e) => e.workoutExercise.id))))
