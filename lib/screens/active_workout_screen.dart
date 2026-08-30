@@ -183,7 +183,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
@@ -275,6 +275,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       _noteControllers[we.id] = TextEditingController();
       _exerciseCardKeys[we.id] = GlobalKey();
     });
+    FocusScope.of(context).unfocus();
     _scrollToBottom();
   }
 
