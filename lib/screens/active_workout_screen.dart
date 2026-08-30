@@ -422,25 +422,34 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Future<void> _finishWorkout(String? notes) async {
     setState(() => _saving = true);
 
-    DateTime endedAt = DateTime.now();
-    DateTime? lastSetTime;
-    for (final ae in _exercises) {
-      for (final set in ae.sets) {
-        if (lastSetTime == null || set.createdAt.isAfter(lastSetTime)) {
-          lastSetTime = set.createdAt;
+    final updates = WorkoutsCompanion(
+      notes: notes != null ? Value(notes) : const Value.absent(),
+    );
+
+    if (_workout.endedAt == null) {
+      DateTime endedAt = DateTime.now();
+      DateTime? lastSetTime;
+      for (final ae in _exercises) {
+        for (final set in ae.sets) {
+          if (lastSetTime == null || set.createdAt.isAfter(lastSetTime)) {
+            lastSetTime = set.createdAt;
+          }
         }
       }
+      if (lastSetTime != null) {
+        endedAt = lastSetTime.add(const Duration(minutes: 1));
+      }
+      await (widget.db.update(widget.db.workouts)
+            ..where((w) => w.id.equals(_workout.id)))
+          .write(WorkoutsCompanion(
+        endedAt: Value(endedAt),
+        notes: notes != null ? Value(notes) : const Value.absent(),
+      ));
+    } else {
+      await (widget.db.update(widget.db.workouts)
+            ..where((w) => w.id.equals(_workout.id)))
+          .write(updates);
     }
-    if (lastSetTime != null) {
-      endedAt = lastSetTime.add(const Duration(minutes: 1));
-    }
-
-    await (widget.db.update(widget.db.workouts)
-          ..where((w) => w.id.equals(_workout.id)))
-        .write(WorkoutsCompanion(
-      endedAt: Value(endedAt),
-      notes: notes != null ? Value(notes) : const Value.absent(),
-    ));
     if (mounted) Navigator.pop(context);
   }
 
