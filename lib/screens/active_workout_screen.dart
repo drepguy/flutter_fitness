@@ -9,7 +9,6 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
-import '../widgets/slide_in_card.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
   final AppDatabase db;
@@ -38,6 +37,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
   final Map<int, TextEditingController> _noteControllers = {};
+  final Map<int, Timer> _saveTimers = {};
   List<int> _restPresets = [30, 60, 90, 120];
   final ScrollController _scrollController = ScrollController();
 
@@ -51,6 +51,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   static final _setBorderFocused = _setBorder.copyWith(
     borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
   );
+  static final _altRowColor = AppTheme.surfaceVariant.withValues(alpha: 0.3);
 
   @override
   void initState() {
@@ -394,13 +395,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Future<void> _updateSet(WorkoutSet set, {int? reps, double? weightKg, int? rpe}) async {
-    await (widget.db.update(widget.db.workoutSets)
-          ..where((s) => s.id.equals(set.id)))
-        .write(WorkoutSetsCompanion(
-      reps: reps != null ? Value(reps) : const Value.absent(),
-      weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
-      rpe: rpe != null ? Value(rpe) : const Value.absent(),
-    ));
+    _saveTimers[set.id]?.cancel();
+    _saveTimers[set.id] = Timer(const Duration(milliseconds: 500), () async {
+      await (widget.db.update(widget.db.workoutSets)
+            ..where((s) => s.id.equals(set.id)))
+          .write(WorkoutSetsCompanion(
+        reps: reps != null ? Value(reps) : const Value.absent(),
+        weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
+        rpe: rpe != null ? Value(rpe) : const Value.absent(),
+      ));
+    });
   }
 
   Future<void> _deleteSet(WorkoutSet set, _ActiveExercise ae) async {
@@ -518,10 +522,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: _exercises.length,
-                      itemBuilder: (context, i) => SlideInCard(
-                        index: i,
-                        child: _buildExerciseCard(_exercises[i]),
-                      ),
+                      itemBuilder: (context, i) =>
+                          _buildExerciseCard(_exercises[i]),
                     ),
             ),
             _buildBottomBar(),
@@ -655,7 +657,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return Padding(
       padding: EdgeInsets.zero,
       child: Container(
-        color: isEven ? AppTheme.surfaceVariant.withValues(alpha: 0.3) : null,
+        color: isEven ? _altRowColor : null,
         child: SizedBox(
           height: 44,
           child: Row(
