@@ -533,10 +533,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF323232),
+                borderRadius: BorderRadius.circular(8),
                 boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black54)],
               ),
               child: Row(
