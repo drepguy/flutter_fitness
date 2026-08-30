@@ -470,6 +470,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         appBar: AppBar(
           title: Text(widget.gym.name),
           actions: [
+            if (_workout.endedAt != null)
+              IconButton(
+                icon: const Icon(Icons.schedule),
+                onPressed: _showEditTimeDialog,
+                tooltip: 'Zeiten bearbeiten',
+              ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
@@ -1003,6 +1009,79 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             child: const Text('Speichern & Pausieren'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _workout.startedAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_workout.startedAt),
+    );
+    if (time == null) return;
+    final newStart = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    await (widget.db.update(widget.db.workouts)
+          ..where((w) => w.id.equals(_workout.id)))
+        .write(WorkoutsCompanion(startedAt: Value(newStart)));
+    setState(() => _workout = _workout.copyWith(startedAt: newStart));
+  }
+
+  Future<void> _pickEndTime() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _workout.endedAt ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_workout.endedAt ?? DateTime.now()),
+    );
+    if (time == null) return;
+    final newEnd = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    await (widget.db.update(widget.db.workouts)
+          ..where((w) => w.id.equals(_workout.id)))
+        .write(WorkoutsCompanion(endedAt: Value(newEnd)));
+    setState(() => _workout = _workout.copyWith(endedAt: Value(newEnd)));
+  }
+
+  void _showEditTimeDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.play_arrow, color: AppTheme.primary),
+                title: Text('Start: ${formatDateTime(_workout.startedAt)}'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickStartTime();
+                },
+              ),
+              if (_workout.endedAt != null)
+                ListTile(
+                  leading: const Icon(Icons.stop, color: AppTheme.error),
+                  title: Text('Ende: ${formatDateTime(_workout.endedAt!)}'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickEndTime();
+                  },
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
