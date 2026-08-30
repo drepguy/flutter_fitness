@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
+import '../widgets/slide_in_card.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
   final AppDatabase db;
@@ -483,11 +484,24 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.add_circle_outline,
-                                size: 64, color: AppTheme.muted),
-                            const SizedBox(height: 12),
-                            Text('Übung hinzufügen um zu starten',
-                                style: TextStyle(color: AppTheme.muted)),
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.add,
+                                  size: 36, color: AppTheme.primary),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Übung hinzufügen',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 4),
+                            Text('Tippe hier um zu starten',
+                                style: TextStyle(
+                                    color: AppTheme.muted, fontSize: 13)),
                           ],
                         ),
                       ),
@@ -496,8 +510,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: _exercises.length,
-                      itemBuilder: (context, i) =>
-                          _buildExerciseCard(_exercises[i]),
+                      itemBuilder: (context, i) => SlideInCard(
+                        index: i,
+                        child: _buildExerciseCard(_exercises[i]),
+                      ),
                     ),
             ),
             _buildBottomBar(),
@@ -508,6 +524,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Widget _buildExerciseCard(_ActiveExercise ae) {
+    final idx = _exercises.indexOf(ae) + 1;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -521,11 +538,19 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryContainer,
+                    color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.fitness_center,
-                      color: AppTheme.primary, size: 22),
+                  child: Center(
+                    child: Text(
+                      '$idx',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -615,12 +640,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final f = _getFocusNodes(set);
     final timeStr =
         '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
+    final isComplete = set.reps > 0 && set.weightKg > 0;
+    final isEven = set.setNo % 2 == 0;
     return Padding(
       padding: EdgeInsets.zero,
-      child: SizedBox(
-        height: 44,
-        child: Row(
-          children: [
+      child: Container(
+        color: isEven ? AppTheme.surfaceVariant.withValues(alpha: 0.3) : null,
+        child: SizedBox(
+          height: 44,
+          child: Row(
+            children: [
             SizedBox(
               width: 40,
               child: Column(
@@ -723,15 +752,20 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ),
             SizedBox(
               width: 32,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.close, size: 18, color: AppTheme.error),
-                onPressed: () => _deleteSet(set, ae),
-              ),
+              child: isComplete
+                  ? const Icon(Icons.check_circle,
+                      size: 20, color: AppTheme.success)
+                  : IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close,
+                          size: 18, color: AppTheme.error),
+                      onPressed: () => _deleteSet(set, ae),
+                    ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 

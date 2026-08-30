@@ -125,11 +125,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Einstellungen')),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
           _buildRestTimerSection(),
-          const Divider(height: 1),
+          const SizedBox(height: 12),
           _buildVibrationSection(),
-          const Divider(height: 1),
+          const SizedBox(height: 12),
           _buildGymSection(),
         ],
       ),
@@ -137,124 +138,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildVibrationSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.vibration, color: AppTheme.primary),
-              SizedBox(width: 8),
-              Text('Vibration',
-                  style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSlider(
-            label: 'Dauer',
-            value: _vibDuration,
-            min: 100,
-            max: 2000,
-            step: 100,
-            unit: 'ms',
-            onChanged: (v) => setState(() => _vibDuration = v),
-          ),
-          _buildSlider(
-            label: 'Anzahl',
-            value: _vibCount,
-            min: 1,
-            max: 10,
-            step: 1,
-            unit: 'x',
-            onChanged: (v) => setState(() => _vibCount = v),
-          ),
-          _buildSlider(
-            label: 'Pause',
-            value: _vibGap,
-            min: 100,
-            max: 2000,
-            step: 100,
-            unit: 'ms',
-            onChanged: (v) => setState(() => _vibGap = v),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: _testVibration,
-                icon: const Icon(Icons.play_arrow, size: 18),
-                label: const Text('Testen'),
-              ),
-              const SizedBox(width: 12),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _vibDuration = 500;
-                    _vibCount = 4;
-                    _vibGap = 600;
-                  });
-                  _saveVibrationSettings();
-                },
-                child: const Text('Standard'),
-              ),
-            ],
-          ),
-        ],
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.vibration, color: AppTheme.primary),
+                SizedBox(width: 8),
+                Text('Vibration',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSlider(
+              label: 'Dauer',
+              value: _vibDuration,
+              min: 100,
+              max: 2000,
+              step: 100,
+              unit: 'ms',
+              onChanged: (v) => setState(() => _vibDuration = v),
+            ),
+            _buildSlider(
+              label: 'Anzahl',
+              value: _vibCount,
+              min: 1,
+              max: 10,
+              step: 1,
+              unit: 'x',
+              onChanged: (v) => setState(() => _vibCount = v),
+            ),
+            _buildSlider(
+              label: 'Pause',
+              value: _vibGap,
+              min: 100,
+              max: 2000,
+              step: 100,
+              unit: 'ms',
+              onChanged: (v) => setState(() => _vibGap = v),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _testVibration,
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: const Text('Testen'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _vibDuration = 500;
+                      _vibCount = 4;
+                      _vibGap = 600;
+                    });
+                    _saveVibrationSettings();
+                  },
+                  child: const Text('Standard'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRestTimerSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.timer, color: AppTheme.primary),
-              SizedBox(width: 8),
-              Text('Rest Timer Presets',
-                  style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (int i = 0; i < 4; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    initialValue: '${_restPresets[i]}',
-                    style: const TextStyle(fontSize: 16),
-                    decoration: const InputDecoration(
-                      suffixText: 's',
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                    ),
-                    onChanged: (v) {
-                      final val = int.tryParse(v);
-                      if (val != null && val > 0) {
-                        _restPresets[i] = val;
-                        _saveRestPresets();
-                      }
-                    },
-                  ),
-                ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.timer, color: AppTheme.primary),
+                SizedBox(width: 8),
+                Text('Rest Timer Presets',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '4 Werte in Sekunden. Werden im Training als Quick-Start angezeigt.',
-            style: TextStyle(color: AppTheme.muted, fontSize: 12),
-          ),
-        ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (int i = 0; i < 4; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      initialValue: '${_restPresets[i]}',
+                      style: const TextStyle(fontSize: 16),
+                      decoration: const InputDecoration(
+                        suffixText: 's',
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                      ),
+                      onChanged: (v) {
+                        final val = int.tryParse(v);
+                        if (val != null && val > 0) {
+                          _restPresets[i] = val;
+                          _saveRestPresets();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '4 Werte in Sekunden. Werden im Training als Quick-Start angezeigt.',
+              style: TextStyle(color: AppTheme.muted, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }

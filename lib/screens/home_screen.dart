@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/import_service.dart';
 import '../utils/export_service.dart';
+import '../widgets/slide_in_card.dart';
 import 'active_workout_screen.dart';
 import 'settings_screen.dart';
 
@@ -186,21 +187,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     _loadData();
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(32),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_circle_outline,
-                              size: 48, color: AppTheme.primary),
-                          const SizedBox(height: 12),
-                          Text('Erstelle dein erstes Studio',
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.fitness_center,
+                                size: 32, color: AppTheme.primary),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Erstelle dein erstes Studio',
                               style: TextStyle(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.bold)),
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
                           const SizedBox(height: 4),
                           Text('Tippe hier um loszulegen',
-                              style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                              style: TextStyle(
+                                  color: AppTheme.muted, fontSize: 13)),
                         ],
                       ),
                     ),
@@ -208,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              for (final gym in _gyms) _buildGymCard(gym),
+              for (final gym in _gyms) ...[
+                SlideInCard(index: _gyms.indexOf(gym), child: _buildGymCard(gym)),
+              ],
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.only(left: 4),
@@ -221,15 +232,32 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_recentWorkouts.isEmpty)
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(32),
                   child: Center(
-                    child: Text('Noch keine Trainings',
-                        style: TextStyle(color: AppTheme.muted)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bar_chart,
+                            size: 36, color: AppTheme.muted),
+                        const SizedBox(height: 12),
+                        const Text('Noch keine Trainings',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 4),
+                        Text('Starte dein erstes Training',
+                            style: TextStyle(
+                                color: AppTheme.muted, fontSize: 13)),
+                      ],
+                    ),
                   ),
                 ),
               )
             else
-              for (final w in _recentWorkouts) _buildWorkoutCard(w),
+              for (final w in _recentWorkouts) ...[
+                SlideInCard(
+                    index: _gyms.length + _recentWorkouts.indexOf(w),
+                    child: _buildWorkoutCard(w)),
+              ],
           ],
         ),
       ),

@@ -117,27 +117,64 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           FutureBuilder<Gym?>(
             future: _getGym(),
             builder: (context, snap) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(snap.data?.name ?? 'Training',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          )),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${formatDateTime(_workout!.startedAt)}${_workout!.endedAt != null ? ' — ${formatDateTime(_workout!.endedAt!)}' : ''}',
-                    style: const TextStyle(color: AppTheme.muted),
+              final totalSets = _exercises.fold(0, (sum, e) => sum + e.sets.length);
+              final totalVolume = _exercises.fold(0.0, (sum, e) {
+                return sum + e.sets.fold(0.0, (s, set) => s + set.weightKg * set.reps);
+              });
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryContainer,
+                      AppTheme.surface,
+                    ],
                   ),
-                  if (_workout!.endedAt != null)
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(snap.data?.name ?? 'Training',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            )),
+                    const SizedBox(height: 8),
                     Text(
-                      formatDuration(
-                          _workout!.endedAt!.difference(_workout!.startedAt)),
-                      style: const TextStyle(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.bold),
+                      '${formatDateTime(_workout!.startedAt)}${_workout!.endedAt != null ? ' — ${formatDateTime(_workout!.endedAt!)}' : ''}',
+                      style: const TextStyle(color: AppTheme.muted),
                     ),
-                ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (_workout!.endedAt != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.gold.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              formatDuration(
+                                  _workout!.endedAt!.difference(_workout!.startedAt)),
+                              style: const TextStyle(
+                                  color: AppTheme.gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
+                            ),
+                          ),
+                        const SizedBox(width: 12),
+                        _buildMiniStat(Icons.replay, '$totalSets Sätze'),
+                        const SizedBox(width: 12),
+                        _buildMiniStat(Icons.fitness_center, '${_exercises.length} Übungen'),
+                        const SizedBox(width: 12),
+                        _buildMiniStat(Icons.scale, '${formatVolume(totalVolume)} kg'),
+                      ],
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -272,6 +309,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildMiniStat(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppTheme.muted),
+        const SizedBox(width: 4),
+        Text(text,
+            style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+      ],
     );
   }
 

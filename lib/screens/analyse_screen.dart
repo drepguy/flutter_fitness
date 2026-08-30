@@ -421,18 +421,21 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                       Expanded(
                           child: StatCard(
                               title: 'Trainings',
-                              value: '${stats['workoutCount']}')),
+                              value: '${stats['workoutCount']}',
+                              icon: Icons.fitness_center)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: StatCard(
                               title: 'Sätze',
-                              value: '${stats['setCount']}')),
+                              value: '${stats['setCount']}',
+                              icon: Icons.replay)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: StatCard(
                               title: 'Pro Woche',
                               value: (stats['perWeek'] as double)
-                                  .toStringAsFixed(1))),
+                                  .toStringAsFixed(1),
+                              icon: Icons.calendar_today)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -442,17 +445,20 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                           child: StatCard(
                               title: 'Volumen',
                               value:
-                                  '${formatVolume(stats['totalVolume'] as double)} kg')),
+                                  '${formatVolume(stats['totalVolume'] as double)} kg',
+                              icon: Icons.scale)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: StatCard(
                               title: 'Übungen',
-                              value: '${stats['exerciseCount']}')),
+                              value: '${stats['exerciseCount']}',
+                              icon: Icons.list)),
                       const SizedBox(width: 8),
                       Expanded(
                           child: StatCard(
                               title: 'Zeitraum',
-                              value: '${stats['days']} Tage')),
+                              value: '${stats['days']} Tage',
+                              icon: Icons.date_range)),
                     ],
                   ),
                 ],

@@ -15,6 +15,8 @@ class AppTheme {
   static const Color outline = Color(0xFF3A3A42);
   static const Color error = Color(0xFFFFB4AB);
   static const Color muted = Color(0xFF8A8A8E);
+  static const Color gold = Color(0xFFFFD700);
+  static const Color success = Color(0xFF66BB6A);
 
   static ThemeData get darkTheme {
     return ThemeData(

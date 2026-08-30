@@ -124,6 +124,22 @@ class _LineChartPainter extends CustomPainter {
     }
     canvas.drawPath(path, linePaint);
 
+    // Gradient fill under line
+    final fillPath = Path.from(path);
+    fillPath.lineTo(points.last.dx, chartTop + chartH);
+    fillPath.lineTo(points.first.dx, chartTop + chartH);
+    fillPath.close();
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFFBB86FC).withValues(alpha: 0.25),
+          const Color(0xFFBB86FC).withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromLTWH(chartLeft, chartTop, chartW, chartH));
+    canvas.drawPath(fillPath, fillPaint);
+
     // Dots
     for (final p in points) {
       canvas.drawCircle(p, 5, dotPaint);
