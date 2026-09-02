@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import '../database/app_database.dart';
@@ -480,6 +481,53 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     }
   }
 
+  void _shareWorkout() {
+    final buffer = StringBuffer();
+    final start = _workout.startedAt;
+    final end = _workout.endedAt;
+    final dateStr = '${start.day.toString().padLeft(2, '0')}.${start.month.toString().padLeft(2, '0')}.${start.year}';
+    final startTime = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+
+    buffer.writeln('Training: ${widget.gym.name}');
+    buffer.writeln('Datum: $dateStr');
+
+    if (end != null) {
+      final duration = end.difference(start);
+      final h = duration.inHours;
+      final m = duration.inMinutes.remainder(60);
+      buffer.writeln('Dauer: ${h}h ${m}min');
+    }
+
+    buffer.writeln('Start: $startTime');
+    buffer.writeln();
+
+    for (final ae in _exercises) {
+      buffer.writeln('${ae.exercise.name} (${ae.exercise.category})');
+      for (final set in ae.sets) {
+        final time = '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
+        final weight = set.weightKg == 0 ? 'Bodyweight' : '${set.weightKg.toStringAsFixed(1)}kg';
+        final parts = [
+          '  ${set.setNo}. ${set.reps} x $weight',
+          if (set.rpe != null) 'RPE ${set.rpe}',
+          if (set.isWarmup) 'Warmup',
+          if (set.isFailure) 'Failure',
+          if (set.note != null && set.note!.isNotEmpty) '(${set.note})',
+          '[$time]',
+        ];
+        buffer.writeln(parts.join(' | '));
+      }
+      if (ae.sets.isNotEmpty) buffer.writeln();
+    }
+
+    if (_workout.notes != null && _workout.notes!.isNotEmpty) {
+      buffer.writeln('Notizen: ${_workout.notes}');
+    }
+
+    SharePlus.instance.share(
+      ShareParams(text: buffer.toString()),
+    );
+  }
+
   Future<void> _finishWorkout(String? notes) async {
     setState(() => _saving = true);
     _deleteTimer?.cancel();
@@ -552,12 +600,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         appBar: AppBar(
           title: Text(widget.gym.name),
           actions: [
-            if (_workout.endedAt != null)
+            if (_workout.endedAt != null) ...[
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: _shareWorkout,
+                tooltip: 'Teilen',
+              ),
               IconButton(
                 icon: const Icon(Icons.schedule),
                 onPressed: _showEditTimeDialog,
                 tooltip: 'Zeiten bearbeiten',
               ),
+            ],
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
