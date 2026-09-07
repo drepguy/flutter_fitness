@@ -29,6 +29,7 @@ class ActiveWorkoutScreen extends StatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
+  static const _timerChannel = MethodChannel('com.example.flutter_fitness/rest_timer');
   late Workout _workout;
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
@@ -58,10 +59,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   );
   static final _altRowColor = AppTheme.surfaceVariant.withValues(alpha: 0.3);
 
+  bool _useNativeTimer = false;
+
   @override
   void initState() {
     super.initState();
     _loadRestPresets();
+    _initNativeTimer();
     if (widget.workout != null) {
       _workout = widget.workout!;
       if (_workout.endedAt != null) {
@@ -94,10 +98,28 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _elapsedSeconds.dispose();
     _restDisplaySeconds.dispose();
     _restDisplayRunning.dispose();
+    _timerChannel.setMethodCallHandler(null);
     for (final c in _controllers.values) { c.dispose(); }
     for (final f in _focusNodes.values) { f.dispose(); }
     for (final c in _noteControllers.values) { c.dispose(); }
     super.dispose();
+  }
+
+  void _initNativeTimer() async {
+    try {
+      await _timerChannel.invokeMethod('isSupported');
+      _useNativeTimer = true;
+      _timerChannel.setMethodCallHandler((call) async {
+        if (call.method == 'onTimerCompleted') {
+          _restTimer?.cancel();
+          _restDisplayRunning.value = false;
+          _restDisplaySeconds.value = 0;
+          _vibrate();
+        }
+      });
+    } catch (_) {
+      _useNativeTimer = false;
+    }
   }
 
   void _startRestTimer(int seconds) {
@@ -105,11 +127,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _restSeconds = seconds;
     _restDisplaySeconds.value = seconds;
     _restDisplayRunning.value = true;
+    if (_useNativeTimer) {
+      _timerChannel.invokeMethod('startTimer', {'duration': seconds});
+    }
     _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_restSeconds <= 0) {
         _restTimer?.cancel();
         _restDisplayRunning.value = false;
-        _vibrate();
       } else {
         _restSeconds--;
         _restDisplaySeconds.value = _restSeconds;
@@ -121,6 +145,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     _restTimer?.cancel();
     _restDisplayRunning.value = false;
     _restDisplaySeconds.value = 0;
+    if (_useNativeTimer) {
+      _timerChannel.invokeMethod('stopTimer');
+    }
   }
 
   Future<void> _vibrate() async {
@@ -736,7 +763,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => _addSet(ae),
-                child: const Text('Satz'),
+                child: const Text('+ Satz'),
               ),
             ),
             _buildNoteField(ae),
