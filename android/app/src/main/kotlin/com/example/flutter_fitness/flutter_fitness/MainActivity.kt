@@ -39,6 +39,7 @@ class MainActivity : FlutterActivity() {
                 }
                 "startTimer" -> {
                     val duration = call.argument<Int>("duration") ?: 60
+                    val endTime = System.currentTimeMillis() + duration * 1000L
                     val intent = Intent(this, RestTimerService::class.java).apply {
                         action = RestTimerService.ACTION_START
                         putExtra(RestTimerService.EXTRA_DURATION_SECONDS, duration)
@@ -48,7 +49,7 @@ class MainActivity : FlutterActivity() {
                     } else {
                         startService(intent)
                     }
-                    result.success(null)
+                    result.success(endTime)
                 }
                 "stopTimer" -> {
                     val intent = Intent(this, RestTimerService::class.java).apply {

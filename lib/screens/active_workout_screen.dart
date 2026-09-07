@@ -28,14 +28,15 @@ class ActiveWorkoutScreen extends StatefulWidget {
   State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
-class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
+class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerProviderStateMixin {
   static const _timerChannel = MethodChannel('com.example.flutter_fitness/rest_timer');
   late Workout _workout;
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
   int _restSeconds = 0;
-  Timer? _restTimer;
+  AnimationController? _restTicker;
   final ValueNotifier<int> _restDisplaySeconds = ValueNotifier(0);
+  int _restEndTimeMillis = 0;
   final ValueNotifier<bool> _restDisplayRunning = ValueNotifier(false);
   final Map<int, _SetControllers> _controllers = {};
   final Map<int, _SetFocusNodes> _focusNodes = {};
@@ -91,8 +92,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   @override
   void dispose() {
+    _restTicker?.dispose();
     _stopwatchTimer?.cancel();
-    _restTimer?.cancel();
     _deleteTimer?.cancel();
     _scrollController.dispose();
     _elapsedSeconds.dispose();
@@ -111,7 +112,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       _useNativeTimer = true;
       _timerChannel.setMethodCallHandler((call) async {
         if (call.method == 'onTimerCompleted') {
-          _restTimer?.cancel();
+          _restTicker?.stop();
           _restDisplayRunning.value = false;
           _restDisplaySeconds.value = 0;
           _vibrate();
@@ -123,28 +124,45 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   void _startRestTimer(int seconds) {
-    _restTimer?.cancel();
+    _restTicker?.stop();
     _restSeconds = seconds;
     _restDisplaySeconds.value = seconds;
     _restDisplayRunning.value = true;
     if (_useNativeTimer) {
-      _timerChannel.invokeMethod('startTimer', {'duration': seconds});
+      _timerChannel.invokeMethod('startTimer', {'duration': seconds}).then((endTime) {
+        if (endTime is int) {
+          _restEndTimeMillis = endTime;
+        }
+      });
+    } else {
+      _restEndTimeMillis = DateTime.now().millisecondsSinceEpoch + seconds * 1000;
     }
-    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_restSeconds <= 0) {
-        _restTimer?.cancel();
-        _restDisplayRunning.value = false;
-      } else {
-        _restSeconds--;
-        _restDisplaySeconds.value = _restSeconds;
-      }
-    });
+    _startDisplayTimer();
+  }
+
+  void _startDisplayTimer() {
+    _restTicker?.dispose();
+    _restTicker = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..addListener(() {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final displaySeconds = ((_restEndTimeMillis - now) / 1000).floor().clamp(0, 999);
+        if (displaySeconds <= 0) {
+          _restTicker?.stop();
+          _restDisplayRunning.value = false;
+          _restDisplaySeconds.value = 0;
+        } else if (_restDisplaySeconds.value != displaySeconds) {
+          _restDisplaySeconds.value = displaySeconds;
+        }
+      })..repeat();
   }
 
   void _cancelRestTimer() {
-    _restTimer?.cancel();
+    _restTicker?.stop();
     _restDisplayRunning.value = false;
     _restDisplaySeconds.value = 0;
+    _restEndTimeMillis = 0;
     if (_useNativeTimer) {
       _timerChannel.invokeMethod('stopTimer');
     }
