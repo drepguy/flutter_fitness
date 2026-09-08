@@ -113,13 +113,10 @@ class RestTimerService : Service() {
         )
 
         val whenTime = endTimeMillis
-        val remaining = ((endTimeMillis - System.currentTimeMillis()) / 1000).toInt().coerceAtLeast(0)
-        val timeText = "${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}"
 
         val builder = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Rest Timer")
-            .setContentText(timeText)
             .setColor(0xFF03DAC5.toInt())
             .setOngoing(true)
             .setWhen(whenTime)
@@ -152,7 +149,7 @@ class RestTimerService : Service() {
             }
         }
 
-        Log.d(TAG, "Built notification, remaining=${remaining}s, flags=0x${notification.flags.toString(16)}")
+        Log.d(TAG, "Built notification, flags=0x${notification.flags.toString(16)}")
         return notification
     }
 
