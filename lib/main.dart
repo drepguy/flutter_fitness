@@ -1,22 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
 import 'utils/backup_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/exercise_list_screen.dart';
 import 'screens/analyse_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final db = AppDatabase();
   BackupService(db).autoBackupIfNeeded();
-  runApp(MyApp(db: db));
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+  runApp(MyApp(db: db, showOnboarding: !onboardingDone));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AppDatabase db;
+  final bool showOnboarding;
 
-  const MyApp({super.key, required this.db});
+  const MyApp({super.key, required this.db, required this.showOnboarding});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late bool _showOnboarding;
+
+  @override
+  void initState() {
+    super.initState();
+    _showOnboarding = widget.showOnboarding;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +42,11 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Fitness',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: MainScreen(db: db),
+      home: _showOnboarding
+          ? OnboardingScreen(onComplete: () {
+              setState(() => _showOnboarding = false);
+            })
+          : MainScreen(db: widget.db),
     );
   }
 }
