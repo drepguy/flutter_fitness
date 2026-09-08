@@ -26,7 +26,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnboardingPage(
       icon: Icons.play_circle_outline,
       title: 'Training starten',
-      body: 'Wähle ein Studio und tippe, um ein Training zu starten. Füge Übungen hinzu und logge deine Sätze mit Wiederholungen und Gewicht.\n\nDie App füllt automatisch deine letzten Gewichte vorheriger Trainings.',
+      body: 'Wähle ein Studio und tippe, um ein Training zu starten. Füge Übungen hinzu und logge deine Sätze mit Wiederholungen und Gewicht.\n\nDie App füllt automatisch deine letzten Gewichte vorheriger Trainings.\n\nStudios können in den Einstellungen hinzugefügt, bearbeitet oder gelöscht werden.',
       color: AppTheme.secondary,
     ),
     _OnboardingPage(
