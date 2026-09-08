@@ -32,8 +32,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnboardingPage(
       icon: Icons.speed,
       title: 'RPE — Rate of Perceived\nExertion',
-      body: 'Bewerte jeden Satz von 1 bis 10:\n\n1 = leichtes Warm-up\n5 = mittelschwer\n7 = schwer, noch 2-3 Wdh. möglich\n10 = maximales Set\n\nSätze mit RPE ≥ 7 werden für deine Analyse (e1RM, PRs, Volumen) verwendet.',
+      body: 'Bewerte jeden Satz von 1 bis 10:\n\n1 = leichtes Warm-up\n5 = mittelschwer\n7 = schwer, noch 2-3 Wdh. möglich\n10 = maximales Set\n\nSätze mit RPE ≥ 7 werden für die Analyse verwendet.',
       color: AppTheme.gold,
+    ),
+    _OnboardingPage(
+      icon: Icons.analytics_outlined,
+      title: 'Begriffe erklärt',
+      body: 'e1RM (estimated 1-Rep Max)\nGeschätztes 1-Wiederholungs-Maximum basierend auf Gewicht und Wdh. (Epley-Formel).\n\nPR (Personal Record)\nDein bisher bestes Ergebnis pro Übung.\n\nVolumen\nGesamtgewicht: Gewicht × Wdh. pro Satz, summiert über alle Sätze.\n\nWdh.\nWiederholungen — wie oft du das Gewicht gehoben hast.',
+      color: AppTheme.primary,
     ),
     _OnboardingPage(
       icon: Icons.timer_outlined,
@@ -44,8 +50,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnboardingPage(
       icon: Icons.check_circle_outline,
       title: 'Los geht\'s',
-      body: 'Tipps:\n\n• Löschungen sind 8 Sekunden rückgängig machbar\n• Teile dein Training als Text\n• Aktiviere Auto-Backup in den Einstellungen\n• Passe Pausen-Timer und Vibration an',
-      color: AppTheme.primary,
+      body: 'Noch ein paar Tipps:\n\n• Löschungen sind 8 Sekunden rückgängig machbar\n• Teile dein Training als Text\n• Aktiviere Auto-Backup in den Einstellungen\n• Passe Pausen-Timer und Vibration an',
+      color: AppTheme.secondary,
     ),
   ];
 
