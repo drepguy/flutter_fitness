@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.flutter_fitness.flutter_fitness"
-    compileSdk = 37
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
