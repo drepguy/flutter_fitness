@@ -1115,8 +1115,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                   ),
                   const SizedBox(width: 12),
                   GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: _cancelRestTimer,
-                    child: const Icon(Icons.close, size: 20, color: AppTheme.secondary),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.close, size: 20, color: AppTheme.secondary),
+                    ),
                   ),
                 ],
               ),
