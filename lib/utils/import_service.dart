@@ -53,6 +53,12 @@ class ImportService {
       final existingId = exNameMap[name.toLowerCase()];
       if (existingId != null) {
         exerciseIdMap[e['id'] as int] = existingId;
+        await (db.update(db.exercises)..where((t) => t.id.equals(existingId)))
+            .write(ExercisesCompanion(
+          iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
+          category: Value(e['category'] as String? ?? 'Sonstiges'),
+          kind: Value(e['kind'] as String? ?? 'free_weight'),
+        ));
       } else {
         final newId = await db.into(db.exercises).insert(ExercisesCompanion.insert(
           name: name,
