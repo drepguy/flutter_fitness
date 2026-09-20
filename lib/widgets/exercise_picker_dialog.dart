@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
+import '../utils/constants.dart';
+import '../utils/exercise_assets.dart';
 
 class ExercisePickerDialog extends StatefulWidget {
   final AppDatabase db;
@@ -100,6 +102,7 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
                   final isSuggested =
                       suggested != null && e.exercise.id == suggested.id;
                   return ListTile(
+                    leading: _buildExerciseIcon(e.exercise),
                     title: Text(e.exercise.name),
                     subtitle: Text(e.exercise.category,
                         style: const TextStyle(
@@ -113,6 +116,39 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseIcon(Exercise exercise) {
+    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          imagePath,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackIcon(exercise),
+        ),
+      );
+    }
+    return _buildFallbackIcon(exercise);
+  }
+
+  Widget _buildFallbackIcon(Exercise exercise) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        iconData[exercise.iconKey] ?? Icons.fitness_center,
+        color: AppTheme.primary,
+        size: 22,
       ),
     );
   }

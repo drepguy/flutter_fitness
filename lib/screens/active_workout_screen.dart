@@ -10,6 +10,8 @@ import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/backup_service.dart';
+import '../utils/exercise_assets.dart';
+import '../utils/constants.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
 
@@ -742,24 +744,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           children: [
             Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$idx',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildExerciseIcon(ae.exercise),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -793,6 +778,41 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
         ),
       ),
     ),
+    );
+  }
+
+  Widget _buildExerciseIcon(Exercise exercise) {
+    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          imagePath,
+          width: 44,
+          height: 44,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackIcon(exercise),
+        ),
+      );
+    }
+    return _buildFallbackIcon(exercise);
+  }
+
+  Widget _buildFallbackIcon(Exercise exercise) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: Icon(
+          iconData[exercise.iconKey] ?? Icons.fitness_center,
+          color: Colors.white,
+          size: 24,
+        ),
+      ),
     );
   }
 

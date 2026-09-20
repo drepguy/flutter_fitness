@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
+import '../utils/exercise_assets.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/simple_line_chart.dart';
 import '../widgets/pr_card.dart';
@@ -306,7 +307,9 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               );
               if (ex != null) setState(() => _selectedExercise = ex);
             },
-            icon: const Icon(Icons.fitness_center, size: 18),
+            icon: _selectedExercise != null
+                ? _buildExerciseIcon(_selectedExercise!)
+                : const Icon(Icons.fitness_center, size: 18),
             label: Text(_selectedExercise?.name ?? 'Übung auswählen...'),
           ),
           if (_selectedExercise != null) ...[
@@ -571,6 +574,31 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
       label: Text(label),
       selected: _metric == value,
       onSelected: (_) => setState(() => _metric = value),
+    );
+  }
+
+  Widget _buildExerciseIcon(Exercise exercise) {
+    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.asset(
+          imagePath,
+          width: 20,
+          height: 20,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            iconData[exercise.iconKey] ?? Icons.fitness_center,
+            size: 18,
+            color: AppTheme.primary,
+          ),
+        ),
+      );
+    }
+    return Icon(
+      iconData[exercise.iconKey] ?? Icons.fitness_center,
+      size: 18,
+      color: AppTheme.primary,
     );
   }
 }
