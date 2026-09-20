@@ -216,7 +216,7 @@ class _ExerciseThumbnail extends StatelessWidget {
           imagePath,
           width: 80,
           height: 80,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => _buildFallback(),
         ),
       );
