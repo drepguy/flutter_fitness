@@ -210,11 +210,11 @@ class _ExerciseThumbnail extends StatelessWidget {
     final imagePath = getExerciseImage(exerciseName);
     if (imagePath != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: Image.asset(
           imagePath,
-          width: 48,
-          height: 48,
+          width: 56,
+          height: 56,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildFallback(),
         ),
@@ -225,16 +225,16 @@ class _ExerciseThumbnail extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      width: 48,
-      height: 48,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         color: AppTheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(
         iconData[iconKey] ?? Icons.fitness_center,
         color: AppTheme.primary,
-        size: 22,
+        size: 26,
       ),
     );
   }

@@ -35,6 +35,8 @@ const Map<String, String> exerciseImageAssets = {
   'squat': 'assets/exercises/squat.webp',
   'stationary-bike': 'assets/exercises/stationary-bike.webp',
   'wrist-curl': 'assets/exercises/wrist-curl.webp',
+  'tricep-pushdown': 'assets/exercises/tricep-pushdown.webp',
+  'cable-bent-over-row': 'assets/exercises/cable-bent-over-row.webp',
 };
 
 final Map<String, String> _germanToKey = {
@@ -62,11 +64,11 @@ final Map<String, String> _germanToKey = {
   'seitheben': 'lateral-raise',
   'trizeps skull crush': 'skull-crusher',
   'skullcrusher': 'skull-crusher',
-  'trizeps kabelzug': 'triceps-pushdown',
-  'trizeps': 'triceps-pushdown',
+  'trizeps kabelzug': 'tricep-pushdown',
+  'trizeps': 'tricep-pushdown',
   'latzug': 'lat-pulldown',
   'lat pulldown': 'lat-pulldown',
-  'rudern brustgestützt': 'chest-supported-row',
+  'rudern brustgestützt': 'cable-bent-over-row',
   'rudern': 'barbell-row',
   'face pulls': 'face-pull',
   'face pull': 'face-pull',
