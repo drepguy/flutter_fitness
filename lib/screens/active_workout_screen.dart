@@ -222,11 +222,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   void _startStopwatch() {
-    final diff = DateTime.now().difference(_workout.startedAt).inSeconds;
-    _elapsedSeconds.value = diff > 0 ? diff : 0;
     _stopwatchTimer?.cancel();
+    _elapsedSeconds.value = DateTime.now().difference(_workout.startedAt).inSeconds;
     _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) _elapsedSeconds.value++;
+      if (mounted) {
+        _elapsedSeconds.value = DateTime.now().difference(_workout.startedAt).inSeconds;
+      }
     });
   }
 
