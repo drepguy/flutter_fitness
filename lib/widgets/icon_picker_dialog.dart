@@ -43,7 +43,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
       title: const Text('Icon wählen'),
       content: SizedBox(
         width: double.maxFinite,
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: MediaQuery.of(context).size.height * 0.7,
         child: Column(
           children: [
             TextField(
@@ -63,9 +63,9 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (context, i) {
@@ -76,7 +76,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected ? AppTheme.primary : Colors.transparent,
                             width: 2,
@@ -87,16 +87,16 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                           children: [
                             if (option.imagePath != null)
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(8),
                                 child: Image.asset(
                                   option.imagePath!,
-                                  width: 36,
-                                  height: 36,
+                                  width: 72,
+                                  height: 72,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.fitness_center,
                                     color: AppTheme.primary,
-                                    size: 28,
+                                    size: 56,
                                   ),
                                 ),
                               )
@@ -104,7 +104,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                               const Icon(
                                 Icons.fitness_center,
                                 color: AppTheme.primary,
-                                size: 28,
+                                size: 56,
                               ),
                             const SizedBox(height: 4),
                             Text(
