@@ -135,12 +135,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: AppTheme.primaryContainer,
-                      child: Text(
-                        e.exercise.name.substring(0, 2).toUpperCase(),
-                        style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14),
+                      child: Icon(
+                        iconData[e.exercise.iconKey] ?? Icons.fitness_center,
+                        color: AppTheme.primary,
+                        size: 20,
                       ),
                     ),
                     title: Text(e.exercise.name),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
+import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 
 class ExerciseEditDialog extends StatefulWidget {
@@ -22,6 +23,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
   String _category = 'Sonstiges';
   String _kind = 'free_weight';
   String _iconKey = 'dumbbell';
+  bool _iconManuallySet = false;
   final _aliasController = TextEditingController();
 
   @override
@@ -32,6 +34,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
       _category = widget.exercise!.category;
       _kind = widget.exercise!.kind;
       _iconKey = widget.exercise!.iconKey;
+      _iconManuallySet = true;
       _loadAliases();
     }
   }
@@ -126,7 +129,14 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
               items: exerciseCategories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
-              onChanged: (v) => setState(() => _category = v!),
+              onChanged: (v) {
+                setState(() {
+                  _category = v!;
+                  if (!_iconManuallySet && _nameController.text.isNotEmpty) {
+                    _iconKey = autoAssignIconKey(_nameController.text, _category);
+                  }
+                });
+              },
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -142,9 +152,21 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
               initialValue: _iconKey,
               decoration: const InputDecoration(labelText: 'Icon'),
               items: iconLabels.entries
-                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .map((e) => DropdownMenuItem(
+                    value: e.key,
+                    child: Row(
+                      children: [
+                        Icon(iconData[e.key] ?? Icons.fitness_center, size: 18, color: AppTheme.primary),
+                        const SizedBox(width: 10),
+                        Text(e.value),
+                      ],
+                    ),
+                  ))
                   .toList(),
-              onChanged: (v) => setState(() => _iconKey = v!),
+              onChanged: (v) => setState(() {
+                _iconKey = v!;
+                _iconManuallySet = true;
+              }),
             ),
             const SizedBox(height: 12),
             TextField(

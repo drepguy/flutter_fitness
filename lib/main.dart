@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:drift/drift.dart' hide Column, Index;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
 import 'utils/backup_service.dart';
+import 'utils/constants.dart';
 import 'screens/home_screen.dart';
 import 'screens/exercise_list_screen.dart';
 import 'screens/analyse_screen.dart';
@@ -13,9 +15,27 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final db = AppDatabase();
   BackupService(db).autoBackupIfNeeded();
+  await _migrateExerciseIcons(db);
   final prefs = await SharedPreferences.getInstance();
   final onboardingDone = prefs.getBool('onboarding_done') ?? false;
   runApp(MyApp(db: db, showOnboarding: !onboardingDone));
+}
+
+Future<void> _migrateExerciseIcons(AppDatabase db) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (prefs.getBool('exercise_icons_migrated') ?? false) return;
+
+  final exercises = await db.select(db.exercises).get();
+  for (final ex in exercises) {
+    if (ex.iconKey == 'dumbbell') {
+      final newIconKey = autoAssignIconKey(ex.name, ex.category);
+      if (newIconKey != 'dumbbell') {
+        await (db.update(db.exercises)..where((e) => e.id.equals(ex.id)))
+            .write(ExercisesCompanion(iconKey: Value(newIconKey)));
+      }
+    }
+  }
+  await prefs.setBool('exercise_icons_migrated', true);
 }
 
 class MyApp extends StatefulWidget {
