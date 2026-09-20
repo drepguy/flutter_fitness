@@ -133,43 +133,46 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 final e = _exercises[i];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    leading: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
-                    title: Text(e.exercise.name),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(e.exercise.category,
-                            style: const TextStyle(
-                                color: AppTheme.muted, fontSize: 12)),
-                        Text(
-                          exerciseKindLabels[e.exercise.kind] ?? e.exercise.kind,
-                          style: const TextStyle(
-                              color: AppTheme.primary, fontSize: 12),
-                        ),
-                        if (e.aliases.isNotEmpty)
-                          Text(
-                            'Aliases: ${e.aliases.map((a) => a.alias).join(', ')}',
-                            style: const TextStyle(
-                                color: AppTheme.muted, fontSize: 11),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _editExercise(e.exercise),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Row(
+                        children: [
+                          _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(e.exercise.name, style: const TextStyle(fontSize: 16)),
+                                const SizedBox(height: 2),
+                                Text(e.exercise.category,
+                                    style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                                Text(
+                                  exerciseKindLabels[e.exercise.kind] ?? e.exercise.kind,
+                                  style: const TextStyle(color: AppTheme.primary, fontSize: 12),
+                                ),
+                                if (e.aliases.isNotEmpty)
+                                  Text(
+                                    'Aliases: ${e.aliases.map((a) => a.alias).join(', ')}',
+                                    style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                                  ),
+                              ],
+                            ),
                           ),
-                      ],
-                    ),
-                    isThreeLine: true,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          onPressed: () => _editExercise(e.exercise),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete,
-                              size: 20, color: AppTheme.error),
-                          onPressed: () => _deleteExercise(e.exercise),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20),
+                            onPressed: () => _editExercise(e.exercise),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20, color: AppTheme.error),
+                            onPressed: () => _deleteExercise(e.exercise),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -216,7 +219,7 @@ class _ExerciseThumbnail extends StatelessWidget {
           imagePath,
           width: 80,
           height: 80,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildFallback(),
         ),
       );
