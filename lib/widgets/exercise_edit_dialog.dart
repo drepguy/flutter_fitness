@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/exercise_assets.dart';
 
 class ExerciseEditDialog extends StatefulWidget {
   final AppDatabase db;
@@ -156,9 +157,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
                     value: e.key,
                     child: Row(
                       children: [
-                        Icon(iconData[e.key] ?? Icons.fitness_center, size: 18, color: AppTheme.primary),
-                        const SizedBox(width: 10),
-                        Text(e.value),
+                        _DialogIcon(iconKey: e.key, label: e.value),
                       ],
                     ),
                   ))
@@ -187,6 +186,47 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
           onPressed: _save,
           child: const Text('Speichern'),
         ),
+      ],
+    );
+  }
+}
+
+class _DialogIcon extends StatelessWidget {
+  final String iconKey;
+  final String label;
+
+  const _DialogIcon({required this.iconKey, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final imagePath = getExerciseImage(label);
+    if (imagePath != null) {
+      return Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              imagePath,
+              width: 28,
+              height: 28,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                iconData[iconKey] ?? Icons.fitness_center,
+                size: 20,
+                color: AppTheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Icon(iconData[iconKey] ?? Icons.fitness_center, size: 20, color: AppTheme.primary),
+        const SizedBox(width: 10),
+        Text(label),
       ],
     );
   }

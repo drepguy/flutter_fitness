@@ -134,7 +134,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
+                    leading: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
+                    ),
                     title: Text(e.exercise.name),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
