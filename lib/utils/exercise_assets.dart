@@ -171,17 +171,16 @@ bool hasExerciseImage(String exerciseName) {
 String? getIconAsset(String iconKey) {
   final key = iconKey.toLowerCase().trim();
 
-  final directPath = 'assets/exercises/$key.webp';
-  if (exerciseImageAssets.containsValue(directPath)) {
-    return directPath;
-  }
-
   if (exerciseImageAssets.containsKey(key)) {
     return exerciseImageAssets[key];
   }
 
   if (_germanToKey.containsKey(key)) {
     return exerciseImageAssets[_germanToKey[key]];
+  }
+
+  if (key.isNotEmpty && !key.contains(' ')) {
+    return 'assets/exercises/$key.webp';
   }
 
   return null;
