@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'constants.dart';
 
 const Map<String, String> exerciseImageAssets = {
@@ -177,14 +179,54 @@ class IconOption {
   final String key;
   final String label;
   final String? imagePath;
+  final String? category;
+  final String? equipment;
+  final String? bodyPart;
 
-  const IconOption({required this.key, required this.label, this.imagePath});
+  const IconOption({
+    required this.key,
+    required this.label,
+    this.imagePath,
+    this.category,
+    this.equipment,
+    this.bodyPart,
+  });
 }
 
-final List<IconOption> allIconOptions = [
-  ...exerciseImageAssets.entries.map((e) => IconOption(
-    key: e.key,
-    label: e.key.split('-').map((w) => w[0].toUpperCase() + w.substring(1)).join(' '),
-    imagePath: e.value,
-  )),
-];
+List<IconOption>? _cachedOptions;
+
+Future<List<IconOption>> getAllIconOptions() async {
+  if (_cachedOptions != null) return _cachedOptions!;
+
+  final jsonStr = await rootBundle.loadString('assets/exercises/exercises_meta.json');
+  final List<dynamic> meta = json.decode(jsonStr);
+
+  final options = <IconOption>[];
+  for (final entry in meta) {
+    final id = entry['id'] as String;
+    final imagePath = 'assets/exercises/$id.webp';
+    options.add(IconOption(
+      key: id,
+      label: entry['name_de'] ?? entry['name_en'] ?? id,
+      imagePath: imagePath,
+      category: entry['category'] as String?,
+      equipment: entry['equipment'] as String?,
+      bodyPart: entry['body_part'] as String?,
+    ));
+  }
+
+  _cachedOptions = options;
+  return options;
+}
+
+List<IconOption> filterIconOptions(List<IconOption> options, String query) {
+  if (query.isEmpty) return options;
+  final q = query.toLowerCase();
+  return options.where((o) =>
+    o.label.toLowerCase().contains(q) ||
+    o.key.toLowerCase().contains(q) ||
+    (o.equipment?.toLowerCase().contains(q) ?? false) ||
+    (o.bodyPart?.toLowerCase().contains(q) ?? false) ||
+    (o.category?.toLowerCase().contains(q) ?? false)
+  ).toList();
+}

@@ -35,6 +35,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/exercises/
+    - assets/exercises/exercises_meta.json
 
 flutter_launcher_icons:
   android: true
