@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/exercise_assets.dart';
+import 'icon_picker_dialog.dart';
 
 class ExerciseEditDialog extends StatefulWidget {
   final AppDatabase db;
@@ -149,23 +150,26 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
               onChanged: (v) => setState(() => _kind = v!),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _iconKey,
-              decoration: const InputDecoration(labelText: 'Icon'),
-              items: iconLabels.entries
-                  .map((e) => DropdownMenuItem(
-                    value: e.key,
-                    child: Row(
-                      children: [
-                        _DialogIcon(iconKey: e.key, label: e.value),
-                      ],
-                    ),
-                  ))
-                  .toList(),
-              onChanged: (v) => setState(() {
-                _iconKey = v!;
-                _iconManuallySet = true;
-              }),
+            GestureDetector(
+              onTap: () async {
+                final picked = await IconPickerDialog.show(context, _iconKey);
+                if (picked != null) {
+                  setState(() {
+                    _iconKey = picked;
+                    _iconManuallySet = true;
+                  });
+                }
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Icon'),
+                child: Row(
+                  children: [
+                    _CurrentIcon(iconKey: _iconKey),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right, color: AppTheme.muted),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -191,43 +195,34 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
   }
 }
 
-class _DialogIcon extends StatelessWidget {
+class _CurrentIcon extends StatelessWidget {
   final String iconKey;
-  final String label;
 
-  const _DialogIcon({required this.iconKey, required this.label});
+  const _CurrentIcon({required this.iconKey});
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = getExerciseImage(label);
+    final imagePath = getIconAsset(iconKey);
     if (imagePath != null) {
-      return Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.asset(
-              imagePath,
-              width: 28,
-              height: 28,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(
-                iconData[iconKey] ?? Icons.fitness_center,
-                size: 20,
-                color: AppTheme.primary,
-              ),
-            ),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.asset(
+          imagePath,
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            iconData[iconKey] ?? Icons.fitness_center,
+            size: 24,
+            color: AppTheme.primary,
           ),
-          const SizedBox(width: 10),
-          Text(label),
-        ],
+        ),
       );
     }
-    return Row(
-      children: [
-        Icon(iconData[iconKey] ?? Icons.fitness_center, size: 20, color: AppTheme.primary),
-        const SizedBox(width: 10),
-        Text(label),
-      ],
+    return Icon(
+      iconData[iconKey] ?? Icons.fitness_center,
+      size: 24,
+      color: AppTheme.primary,
     );
   }
 }

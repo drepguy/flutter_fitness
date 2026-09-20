@@ -210,7 +210,7 @@ class _ExerciseThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = getExerciseImage(exerciseName);
+    final imagePath = getIconAsset(iconKey) ?? getExerciseImage(exerciseName);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),

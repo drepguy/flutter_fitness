@@ -1,9 +1,13 @@
+import 'package:flutter/material.dart';
+import 'constants.dart';
+
 const Map<String, String> exerciseImageAssets = {
   'ab-wheel-rollout': 'assets/exercises/ab-wheel-rollout.webp',
   'back-extension': 'assets/exercises/back-extension.webp',
   'barbell-row': 'assets/exercises/barbell-row.webp',
   'bench-press': 'assets/exercises/bench-press.webp',
   'bulgarian-split-squat': 'assets/exercises/bulgarian-split-squat.webp',
+  'cable-bent-over-row': 'assets/exercises/cable-bent-over-row.webp',
   'cable-crossover': 'assets/exercises/cable-crossover.webp',
   'cable-curl': 'assets/exercises/cable-curl.webp',
   'calf-raise': 'assets/exercises/calf-raise.webp',
@@ -34,12 +38,11 @@ const Map<String, String> exerciseImageAssets = {
   'skull-crusher': 'assets/exercises/skull-crusher.webp',
   'squat': 'assets/exercises/squat.webp',
   'stationary-bike': 'assets/exercises/stationary-bike.webp',
-  'wrist-curl': 'assets/exercises/wrist-curl.webp',
   'tricep-pushdown': 'assets/exercises/tricep-pushdown.webp',
-  'cable-bent-over-row': 'assets/exercises/cable-bent-over-row.webp',
+  'wrist-curl': 'assets/exercises/wrist-curl.webp',
 };
 
-final Map<String, String> _germanToKey = {
+const Map<String, String> _germanToKey = {
   'hackenschmidt': 'hack-squat',
   'hack squat': 'hack-squat',
   'hackschmitt': 'hack-squat',
@@ -119,12 +122,9 @@ final Map<String, String> _germanToKey = {
   'dumbbell curl': 'hammer-curl',
   'curl': 'hammer-curl',
   'leg curl': 'leg-curl',
-  'beinbeuger': 'leg-curl',
   'leg extension': 'leg-extension',
-  'beinstrecker': 'leg-extension',
   'seated cable row': 'seated-row',
   'cable row': 'seated-row',
-  'lat pulldown': 'lat-pulldown',
   'wrist curl': 'wrist-curl',
   'laufen': 'running',
   'joggen': 'running',
@@ -165,3 +165,30 @@ String? getExerciseImage(String exerciseName) {
 bool hasExerciseImage(String exerciseName) {
   return getExerciseImage(exerciseName) != null;
 }
+
+String? getIconAsset(String iconKey) {
+  if (exerciseImageAssets.containsKey(iconKey)) {
+    return exerciseImageAssets[iconKey];
+  }
+  return null;
+}
+
+class IconOption {
+  final String key;
+  final String label;
+  final String? imagePath;
+
+  const IconOption({required this.key, required this.label, this.imagePath});
+}
+
+final List<IconOption> allIconOptions = [
+  ...exerciseImageAssets.entries.map((e) => IconOption(
+    key: e.key,
+    label: e.key.split('-').map((w) => w[0].toUpperCase() + w.substring(1)).join(' '),
+    imagePath: e.value,
+  )),
+  ...iconLabels.entries.where((e) => !exerciseImageAssets.containsKey(e.key)).map((e) => IconOption(
+    key: e.key,
+    label: e.value,
+  )),
+];
