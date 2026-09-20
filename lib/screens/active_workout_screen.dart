@@ -9,6 +9,7 @@ import 'package:vibration/vibration.dart';
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/backup_service.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
 
@@ -616,6 +617,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           .write(updates);
     }
     if (mounted) Navigator.pop(context);
+
+    BackupService(widget.db).saveBackup();
   }
 
   Future<void> _cancelWorkout() async {
