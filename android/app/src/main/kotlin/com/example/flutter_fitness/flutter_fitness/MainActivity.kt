@@ -64,13 +64,28 @@ class MainActivity : FlutterActivity() {
                 }
                 "checkLiveInfoStatus" -> {
                     val sdk = Build.VERSION.SDK_INT
-                    if (sdk >= 36) {
+                    val manufacturer = Build.MANUFACTURER.lowercase()
+                    val isOppoLike = manufacturer.contains("oppo") ||
+                            manufacturer.contains("oneplus") ||
+                            manufacturer.contains("realme")
+                    if (sdk >= 36 && isOppoLike) {
                         val granted = ContextCompat.checkSelfPermission(
                             this, "android.permission.POST_PROMOTED_NOTIFICATIONS"
                         ) == PackageManager.PERMISSION_GRANTED
-                        result.success(granted)
+                        result.success(mapOf(
+                            "needsHint" to true,
+                            "permissionGranted" to granted
+                        ))
+                    } else if (sdk >= 36) {
+                        val granted = ContextCompat.checkSelfPermission(
+                            this, "android.permission.POST_PROMOTED_NOTIFICATIONS"
+                        ) == PackageManager.PERMISSION_GRANTED
+                        result.success(mapOf(
+                            "needsHint" to !granted,
+                            "permissionGranted" to granted
+                        ))
                     } else {
-                        result.success(true)
+                        result.success(mapOf("needsHint" to false, "permissionGranted" to true))
                     }
                 }
                 else -> result.notImplemented()

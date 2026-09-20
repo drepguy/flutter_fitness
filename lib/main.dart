@@ -79,26 +79,41 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _checkLiveInfo() async {
     try {
-      final granted = await _channel.invokeMethod('checkLiveInfoStatus');
-      if (granted == false && mounted && context.mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E2E),
-            title: const Text('Live Info aktivieren'),
-            content: const Text(
-              'Für den Status-Balken-Chip musst du "Live Info anzeigen" aktivieren:\n\n'
-              'Einstellungen → Apps → Flutter Fitness → Benachrichtigungen → Live Info anzeigen\n\n'
-              'Nach einem App-Neustart oder -Reinstall muss dies ggf. erneut aktiviert werden.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Verstanden'),
+      final result = await _channel.invokeMethod('checkLiveInfoStatus');
+      if (result is Map) {
+        final needsHint = result['needsHint'] == true;
+        if (needsHint && mounted && context.mounted) {
+          final prefs = await SharedPreferences.getInstance();
+          final dismissed = prefs.getBool('live_info_hint_dismissed') ?? false;
+          if (!dismissed) {
+            if (!mounted || !context.mounted) return;
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1E1E2E),
+                title: const Text('Live Info aktivieren'),
+                content: const Text(
+                  'Für den Status-Balken-Chip musst du "Live Info anzeigen" aktivieren:\n\n'
+                  'Einstellungen → Apps → Flutter Fitness → Benachrichtigungen → Live Info anzeigen\n\n'
+                  'Nach einem App-Neustart oder -Reinstall muss dies ggf. erneut aktiviert werden.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      prefs.setBool('live_info_hint_dismissed', true);
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text('Nicht mehr anzeigen'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Verstanden'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
+            );
+          }
+        }
       }
     } catch (_) {}
   }
