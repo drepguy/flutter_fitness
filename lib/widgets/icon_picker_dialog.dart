@@ -66,6 +66,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                     crossAxisCount: 3,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
+                    childAspectRatio: 0.75,
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (context, i) {
