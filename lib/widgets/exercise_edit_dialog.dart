@@ -164,7 +164,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
                 decoration: const InputDecoration(labelText: 'Icon'),
                 child: Row(
                   children: [
-                    _CurrentIcon(iconKey: _iconKey),
+                    _CurrentIcon(iconKey: _iconKey, exerciseName: _nameController.text),
                     const Spacer(),
                     const Icon(Icons.chevron_right, color: AppTheme.muted),
                   ],
@@ -197,12 +197,13 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
 
 class _CurrentIcon extends StatelessWidget {
   final String iconKey;
+  final String? exerciseName;
 
-  const _CurrentIcon({required this.iconKey});
+  const _CurrentIcon({required this.iconKey, this.exerciseName});
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = getIconAsset(iconKey);
+    final imagePath = getIconAsset(iconKey) ?? (exerciseName != null ? getExerciseImage(exerciseName!) : null);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),

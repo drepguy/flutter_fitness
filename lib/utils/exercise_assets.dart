@@ -169,9 +169,33 @@ bool hasExerciseImage(String exerciseName) {
 }
 
 String? getIconAsset(String iconKey) {
-  if (exerciseImageAssets.containsKey(iconKey)) {
-    return exerciseImageAssets[iconKey];
+  final key = iconKey.toLowerCase().trim();
+
+  if (exerciseImageAssets.containsKey(key)) {
+    return exerciseImageAssets[key];
   }
+
+  if (_germanToKey.containsKey(key)) {
+    return exerciseImageAssets[_germanToKey[key]];
+  }
+
+  final asAsset = 'assets/exercises/$key.webp';
+  if (exerciseImageAssets.containsValue(asAsset)) {
+    return asAsset;
+  }
+
+  for (final entry in _germanToKey.entries) {
+    if (key.contains(entry.key) || entry.key.contains(key)) {
+      return exerciseImageAssets[entry.value];
+    }
+  }
+
+  for (final assetKey in exerciseImageAssets.keys) {
+    if (key.contains(assetKey) || assetKey.contains(key)) {
+      return exerciseImageAssets[assetKey];
+    }
+  }
+
   return null;
 }
 
