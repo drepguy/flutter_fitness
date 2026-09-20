@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
@@ -62,12 +63,45 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  static const _channel = MethodChannel('com.example.flutter_fitness/rest_timer');
 
   late final List<Widget> _screens = [
     HomeScreen(db: widget.db),
     ExerciseListScreen(db: widget.db),
     AnalyseScreen(db: widget.db),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLiveInfo();
+  }
+
+  Future<void> _checkLiveInfo() async {
+    try {
+      final granted = await _channel.invokeMethod('checkLiveInfoStatus');
+      if (granted == false && mounted && context.mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            title: const Text('Live Info aktivieren'),
+            content: const Text(
+              'Für den Status-Balken-Chip musst du "Live Info anzeigen" aktivieren:\n\n'
+              'Einstellungen → Apps → Flutter Fitness → Benachrichtigungen → Live Info anzeigen\n\n'
+              'Nach einem App-Neustart oder -Reinstall muss dies ggf. erneut aktiviert werden.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Verstanden'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {

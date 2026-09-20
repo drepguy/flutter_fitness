@@ -62,6 +62,17 @@ class MainActivity : FlutterActivity() {
                     requestNotificationPermission()
                     result.success(null)
                 }
+                "checkLiveInfoStatus" -> {
+                    val sdk = Build.VERSION.SDK_INT
+                    if (sdk >= 36) {
+                        val granted = ContextCompat.checkSelfPermission(
+                            this, "android.permission.POST_PROMOTED_NOTIFICATIONS"
+                        ) == PackageManager.PERMISSION_GRANTED
+                        result.success(granted)
+                    } else {
+                        result.success(true)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
