@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide Column, Index;
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/exercise_assets.dart';
 import '../widgets/exercise_edit_dialog.dart';
 
 class ExerciseListScreen extends StatefulWidget {
@@ -133,14 +134,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppTheme.primaryContainer,
-                      child: Icon(
-                        iconData[e.exercise.iconKey] ?? Icons.fitness_center,
-                        color: AppTheme.primary,
-                        size: 20,
-                      ),
-                    ),
+                    leading: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
                     title: Text(e.exercise.name),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,4 +197,45 @@ class _ExerciseWithAliases {
   final List<ExerciseAliase> aliases;
 
   _ExerciseWithAliases({required this.exercise, required this.aliases});
+}
+
+class _ExerciseThumbnail extends StatelessWidget {
+  final String exerciseName;
+  final String iconKey;
+
+  const _ExerciseThumbnail({required this.exerciseName, required this.iconKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final imagePath = getExerciseImage(exerciseName);
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          imagePath,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallback(),
+        ),
+      );
+    }
+    return _buildFallback();
+  }
+
+  Widget _buildFallback() {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        iconData[iconKey] ?? Icons.fitness_center,
+        color: AppTheme.primary,
+        size: 22,
+      ),
+    );
+  }
 }

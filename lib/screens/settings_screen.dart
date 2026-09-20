@@ -220,6 +220,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildBackupSection(),
           const SizedBox(height: 12),
           _buildGymSection(),
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              'Exercise illustrations by RepDB (repdb.co)',
+              style: TextStyle(color: AppTheme.muted.withValues(alpha: 0.5), fontSize: 11),
+            ),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
