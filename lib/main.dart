@@ -100,6 +100,13 @@ class _MainScreenState extends State<MainScreen> {
                 actions: [
                   TextButton(
                     onPressed: () {
+                      _channel.invokeMethod('openNotificationSettings');
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text('Einstellungen öffnen'),
+                  ),
+                  TextButton(
+                    onPressed: () {
                       prefs.setBool('live_info_hint_dismissed', true);
                       Navigator.of(ctx).pop();
                     },
