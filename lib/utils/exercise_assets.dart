@@ -187,8 +187,4 @@ final List<IconOption> allIconOptions = [
     label: e.key.split('-').map((w) => w[0].toUpperCase() + w.substring(1)).join(' '),
     imagePath: e.value,
   )),
-  ...iconLabels.entries.where((e) => !exerciseImageAssets.containsKey(e.key)).map((e) => IconOption(
-    key: e.key,
-    label: e.value,
-  )),
 ];
