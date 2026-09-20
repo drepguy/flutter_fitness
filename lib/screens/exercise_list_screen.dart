@@ -134,10 +134,8 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    leading: _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
                     title: Text(e.exercise.name),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,11 +211,11 @@ class _ExerciseThumbnail extends StatelessWidget {
     final imagePath = getIconAsset(iconKey) ?? getExerciseImage(exerciseName);
     if (imagePath != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: Image.asset(
           imagePath,
-          width: 56,
-          height: 56,
+          width: 80,
+          height: 80,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildFallback(),
         ),
@@ -228,16 +226,16 @@ class _ExerciseThumbnail extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      width: 56,
-      height: 56,
+      width: 80,
+      height: 80,
       decoration: BoxDecoration(
         color: AppTheme.primaryContainer,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
         iconData[iconKey] ?? Icons.fitness_center,
         color: AppTheme.primary,
-        size: 26,
+        size: 36,
       ),
     );
   }
