@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Pre-commit gates — check-only, never rewrites files.
+# Definition of done: format clean, analyze 0 issues, all tests green.
+# Bypass only when a gate fails for unrelated reasons: git commit --no-verify
+set -e
+
+echo "pre-commit: dart format --output=none --set-exit-if-changed ."
+if ! dart format --output=none --set-exit-if-changed .; then
+  echo "" >&2
+  echo "pre-commit FAILED: unformatted files. Fix with: dart format ." >&2
+  exit 1
+fi
+
+echo "pre-commit: flutter analyze (must be 0 issues)"
+if ! flutter analyze --fatal-infos --fatal-warnings; then
+  echo "" >&2
+  echo "pre-commit FAILED: analyzer issues. Fix them or: git commit --no-verify" >&2
+  exit 1
+fi
+
+echo "pre-commit: flutter test"
+if ! flutter test; then
+  echo "" >&2
+  echo "pre-commit FAILED: tests red. Fix them or: git commit --no-verify" >&2
+  exit 1
+fi
+
+echo "pre-commit: OK"

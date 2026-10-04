@@ -1,0 +1,2 @@
+# The pre-commit hook must keep LF endings or bash chokes on CRLF.
+hooks/pre-commit text eol=lf

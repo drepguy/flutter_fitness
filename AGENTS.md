@@ -124,13 +124,20 @@ dart run build_runner build --delete-conflicting-outputs
 dart run build_runner watch        # during active DB work
 ```
 
-Pre-commit (PowerShell-friendly; mirrors `flutter_workmanager` practice):
+Pre-commit — the repo ships `hooks/pre-commit` (check-only; it never
+rewrites files). It runs automatically on every `git commit` because the
+clone has `git config core.hooksPath hooks` set (one-time setup per clone:
+`git config core.hooksPath hooks`). Gates, in order:
 
-```powershell
-dart format --set-exit-if-changed .
-flutter analyze
+```bash
+dart format --output=none --set-exit-if-changed .   # check, no writing
+flutter analyze --fatal-infos --fatal-warnings       # must be 0 issues
 flutter test
 ```
+
+Manual run of the same gates: `bash hooks/pre-commit`. Bypass only when a
+gate fails for unrelated reasons: `git commit --no-verify`, then fix forward.
+To apply formatting: `dart format .` (writes).
 
 Verified baseline (2026-10):
 
@@ -334,13 +341,17 @@ Channel `com.example.flutter_fitness/rest_timer`:
 - `test/widget_test.dart` is an empty stub.
 - Two vibration paths (Dart `vibration` + native service) — see Native Android.
 
-## Git & PR conventions
+## Git conventions
 
-- Feature branches (`feature/...`, `fix/...`), German UI strings welcome but
-  branch/commit messages in English, conventional commits
-  (`feat:`, `fix:`, `docs:`, `refactor:`). Default branch: `master`.
-- Keep diffs small; update `Flutter_Fitness_Spec_v3.md` when behavior changes.
-  No direct pushes to `master` for agent work — open a PR.
+- **Push directly to `master`** — this is the workflow for everyone, agent
+  work included. No feature branches, no pull requests. Everything lands on
+  `master` and is pushed straight there.
+- Commit messages in English, conventional commits (`feat:`, `fix:`,
+  `docs:`, `refactor:`, `style:`, `chore:`). German UI strings welcome.
+- Keep diffs small; update `Flutter_Fitness_Spec_v3.md` when behavior
+  changes.
+- `hooks/pre-commit` (see "Setup & common commands") enforces the definition
+  of done on every commit.
 - Definition of done: `dart format` clean, `flutter analyze` 0 issues,
   `flutter test` green, Drift codegen re-run if tables changed.
 
