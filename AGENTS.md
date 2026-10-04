@@ -17,29 +17,68 @@
 ## Project overview
 
 Local-first, privacy-focused fitness tracker (Android). No server, no auth,
-no network calls, no analytics/telemetry.
+no analytics/telemetry.
 
 - UI: Flutter + Material 3, dark theme only (`lib/theme/app_theme.dart`).
-  UI language German, code/comments/identifiers English.
+  UI language German, code/comments/identifiers English. No
+  `flutter_localizations` / ARB files — all UI strings are hardcoded German.
 - DB: Drift (SQLite) via `NativeDatabase.createInBackground`
   (`lib/database/app_database.dart`, tables in `lib/models/tables.dart`).
-- Settings: `shared_preferences`. Charts: `fl_chart` (custom
-  `SimpleLineChart` in `lib/widgets/`). Fonts: `google_fonts` (Orbitron headers).
+- Settings: `shared_preferences` only (onboarding, rest presets, vibration,
+  backup flags, icon-migration flag) — no settings service/layer.
+- Charts: **custom `SimpleLineChart`** (`lib/widgets/simple_line_chart.dart`,
+  hand-rolled `CustomPainter`). `fl_chart` sits in `pubspec.yaml` but is
+  **never imported in `lib/`** — don't assume it's available in code.
+- Fonts: `google_fonts` (`GoogleFonts.orbitron` in `theme/app_theme.dart` and
+  `onboarding_screen.dart`). No `fonts:` section in `pubspec.yaml` and no
+  bundled `.ttf` → google_fonts fetches at runtime; the release manifest
+  declares no `INTERNET` permission, so offline builds fall back to the
+  default font. Bundling Orbitron would be the fix if ever needed.
 - Native: `MethodChannel('com.example.flutter_fitness/rest_timer')` for
-  OPPO/OnePlus Live Alert chip + foreground rest-timer service.
+  OPPO/OnePlus/Realme Live Alert chip (Android 16 / SDK 36+) + foreground
+  rest-timer service — see "Native Android" below.
 
 ```
 lib/
-  main.dart            # init DB, migrate icons, onboarding gate, MainScreen + 3 tabs
-  models/tables.dart   # ALL Drift Table definitions (single file)
-  database/            # app_database.dart + app_database.g.dart (generated)
-  screens/             # home, active_workout, workout_detail?, exercise_list,
-                       # analyse, onboarding, settings/gym_management
-  widgets/             # dialogs, cards, rest_timer_overlay, simple_line_chart, ...
-  utils/               # constants, formatters, backup/export/import_service,
-                       # exercise_assets, backup_service
+  main.dart            # init DB, auto-backup, icon migration, onboarding gate,
+                       # MainScreen + NavigationBar (3 tabs)
+  models/tables.dart   # ALL 8 Drift Table definitions (single file)
+  database/            # app_database.dart (seed + migration) + app_database.g.dart
+  screens/             # home, active_workout (largest, ~1350 lines), exercise_list,
+                       # analyse, onboarding, settings (incl. gym management)
+  widgets/             # dialogs, cards, simple_line_chart, rest_timer_overlay (dead)
+  utils/               # constants, formatters, exercise_assets,
+                       # backup/export/import_service
   theme/app_theme.dart # single ThemeData source (colors, shapes, input/button themes)
 ```
+
+Rough sizes: `active_workout_screen` ~44 KB, `analyse` ~21 KB,
+`settings` ~18 KB, `home` ~18 KB — everything else ≤ 10 KB.
+
+## Navigation & screens
+
+No named routes, no `go_router` — plain
+`Navigator.push(MaterialPageRoute(...))` plus a `NavigationBar` in `MainScreen`
+(`lib/main.dart`):
+
+- **Tabs:** Training → `HomeScreen`, Übungen → `ExerciseListScreen`,
+  Analyse → `AnalyseScreen`.
+- **Starting a workout:** tap a gym card on Home → `ActiveWorkoutScreen(db,
+  gym)` which *immediately inserts a new `Workouts` row* and starts a
+  stopwatch. Tapping a workout card reopens the same screen with `workout:`
+  (resume a paused workout, or view/edit a finished one).
+- **Settings** (only entry: gear icon on Home) also hosts **gym management**
+  ("Studios" section + `widgets/gym_edit_dialog.dart`), rest-timer presets,
+  vibration and backup controls. Spec §4.7 "Studios Verwalten Screen" is
+  implemented *inside* Settings, not as a separate screen.
+- **No `workout_detail` screen** (spec §4.4 unimplemented): finished workouts
+  reopen `ActiveWorkoutScreen`, where "Teilen" (share text) and
+  "Zeiten bearbeiten" are offered when `endedAt != null`.
+- **Templates are DB-only:** `workout_templates` /
+  `workout_template_exercises` exist in schema + export/import, but no
+  screen/dialog references them yet.
+- On first run: `OnboardingScreen` (6 pages) gates `MainScreen` via pref
+  `onboarding_done`.
 
 ## Agent skills — installed in `.agents/skills/`
 
@@ -59,7 +98,7 @@ Load with the `skill` tool when the task matches. Highest value here:
 Removed as 100% inapplicable (verified: no usage, no dependency, spec
 contradicts): `flutter-use-http-package` (local-only, spec §15),
 `flutter-setup-localization` (German-hardcoded, no `flutter_localizations`),
-`flutter-setup-declarative-routing` (`BottomNavigationBar`, no `go_router`),
+`flutter-setup-declarative-routing` (`NavigationBar`, no `go_router`),
 `dart-setup-ffi-assets` / `dart-use-ffigen` (no `hook/`, no `ffigen`),
 `dart-build-cli-app` (Flutter app, not a CLI).
 Kept on purpose (borderline, not 100%): `flutter-implement-json-serialization`
@@ -75,9 +114,9 @@ pattern-matching/primary-constructors/doc-examples, `flutter-add-integration-tes
 flutter pub get
 flutter run                       # Android 10+ device/emulator
 
-flutter analyze                    # must be clean
+flutter analyze                    # must be clean for YOUR changes
 dart format .                      # never skip; generated *.g.dart excluded by tooling
-flutter test                       # widget/unit tests in test/
+flutter test                       # test/ (currently one stub — see below)
 flutter build apk --release        # output: build/app/outputs/flutter-apk/
 
 # Drift codegen — after ANY change to tables.dart / app_database.dart:
@@ -85,13 +124,26 @@ dart run build_runner build --delete-conflicting-outputs
 dart run build_runner watch        # during active DB work
 ```
 
-Pre-commit (mirrors `flutter_workmanager` AGENTS.md practice):
+Pre-commit (PowerShell-friendly; mirrors `flutter_workmanager` practice):
 
-```bash
-dart format --set-exit-if-changed . 2>&1 | head -20
+```powershell
+dart format --set-exit-if-changed .
 flutter analyze
 flutter test
 ```
+
+Verified baseline (2026-10):
+
+- `flutter test` passes — but `test/widget_test.dart` is an empty
+  `// TODO: Add app tests` stub; there is **no real coverage yet**. Add tests
+  when touching logic (`dart-add-unit-test` / `flutter-add-widget-test`).
+- `flutter analyze` currently reports ~25 pre-existing issues (5 warnings:
+  unused field/local in `active_workout_screen.dart`, unused imports in
+  `exercise_assets.dart` + `icon_picker_dialog.dart`; rest are infos like
+  `use_build_context_synchronously`, `unnecessary_underscores`,
+  `unnecessary_brace_in_string_interps`). Don't add new ones; clean up the
+  warnings when you touch those files.
+- Default branch is **`master`** (not `main`).
 
 ## Context7 — use it for library docs
 
@@ -160,14 +212,19 @@ Follow https://dart.dev/effective-dart and https://dart.dev/tools/analysis:
 ## Drift / database rules (strict)
 
 - Tables live ONLY in `lib/models/tables.dart`. DB class + seed + migration
-  ONLY in `lib/database/app_database.dart`.
+  ONLY in `lib/database/app_database.dart`. Queries live inline in screens —
+  `lib/database/daos/` exists but is **empty**; don't invent a DAO layer
+  without discussion.
 - NEVER hand-edit `*.g.dart` — regenerate with `build_runner` (same rule as
   `flutter_workmanager` AGENTS.md: codegen via tool, never by hand).
 - Current `schemaVersion` is 3. Every schema change must bump it AND extend
   `MigrationStrategy.onUpgrade`. The current `onUpgrade` is destructive
-  (drop + reseed) — acceptable only pre-release; for any real user data,
-  switch to `drift_dev make-migrations` + `stepByStep` (see Context7 snippet)
-  instead of dropping tables.
+  (drop all tables + recreate + reseed) — acceptable only pre-release; for any
+  real user data, switch to `drift_dev make-migrations` + `stepByStep` (see
+  Context7 snippet) instead of dropping tables.
+- `_seedData()` creates 2 gyms ("Thomas Sport Center", "All Inclusive
+  Fitness") + 28 exercises with aliases — German names, uses `batch()` for
+  gyms; run on `onCreate` AND after every destructive `onUpgrade`.
 - Use `batch()` for seeds/bulk inserts; `Value(...)` for nullable companion
   fields; `references(..., onDelete: KeyAction.cascade/setNull)` as in
   `tables.dart` — preserve CASCADE vs SET NULL semantics.
@@ -178,34 +235,111 @@ Follow https://dart.dev/effective-dart and https://dart.dev/tools/analysis:
   `workout_exercises` / `workout_template_exercises` must belong to the
   parent's `gym_id`. `is_system` gyms can be renamed, never deleted.
 
+## Native Android (`android/app/src/main/kotlin/.../flutter_fitness/`)
+
+Channel `com.example.flutter_fitness/rest_timer`:
+
+| Direction | Method | Behavior |
+|---|---|---|
+| Dart→native | `isSupported` | `Build.VERSION.SDK_INT >= 36` (Android 16) |
+| Dart→native | `startTimer {duration}` | starts `RestTimerService`, returns endTime |
+| Dart→native | `stopTimer` | stops the service |
+| Dart→native | `requestNotificationPermission` | `POST_NOTIFICATIONS` (+ promoted on SDK 36) |
+| Dart→native | `checkLiveInfoStatus` | drives the "Live Info aktivieren" hint dialog in `MainScreen._checkLiveInfo` |
+| Dart→native | `openNotificationSettings` | opens app notification settings |
+| native→Dart | `onTimerCompleted` | broadcast → stops ticker + vibrates in Dart |
+
+- `RestTimerService.kt`: foreground service (`specialUse`), low-importance
+  countdown notification; on SDK ≥ 36 sets the promoted-ongoing flag so
+  OPPO/OnePlus show the status-bar chip; vibrates natively on completion.
+- On SDK < 36 there is **no native path** — `ActiveWorkoutScreen` falls back
+  to an in-app `AnimationController` ticker (no background countdown).
+- Manifest: `MANAGE_EXTERNAL_STORAGE`, `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`,
+  `POST_PROMOTED_NOTIFICATIONS`; Impeller explicitly enabled
+  (`io.flutter.embedding.android.EnableImpeller = true`).
+- Note: completion can trigger **both** the native vibration and Dart's
+  `_vibrate()` (prefs `vib_duration/vib_count/vib_gap`) → double buzz on
+  supported devices. Don't "fix" one side without checking the other.
+
+## Data, backup & assets gotchas
+
+- `BackupService` writes to hardcoded `/storage/emulated/0/Documents/Flutter_Fitness`
+  (`backup_yyyy-MM-dd_HH-mm.json`). `autoBackupIfNeeded()` runs at every app
+  start, once per day, **default enabled** (pref `auto_backup_enabled`).
+  Restore is merge-only.
+- Export: `export_service.dart` → `{version: 1, exportedAt, gyms, exercises,
+  exerciseAliases, workouts, workoutExercises, workoutSets, workoutTemplates,
+  workoutTemplateExercises}`; file `flutter_fitness_export.json` in temp dir.
+- Import: `import_service.dart` merges by natural keys (gyms by lowercased
+  name; exercises by name — existing rows get `iconKey`/`category`/`kind`
+  overwritten; workouts by `startedAt+gymId`; sets by `weId+setNo`; …),
+  throws a German error for unknown `version`. Home app bar drives
+  import/export/share (`file_picker`, `share_plus`).
+- Exercise images: 610 files in `assets/exercises/` (`*.webp` +
+  `exercises_meta.json`), declared in `pubspec.yaml`. `tools/download_all.ps1`
+  / `download_exercises.ps1` fetch from `exercise-dataset.com` and regenerate
+  the meta file — scripts contain **hardcoded absolute `D:\git\...` paths**.
+- `utils/exercise_assets.dart` resolves images: exact name → alias →
+  substring (`getExerciseImage`), `getIconAsset(iconKey)` falls back to the
+  literal key path; `getAllIconOptions()` parses+caches `exercises_meta.json`.
+  One-time icon migration (`dumbbell` → heuristics) runs in `main()` gated by
+  pref `exercise_icons_migrated`.
+
 ## Domain rules (from spec — do not "fix")
 
-- e1RM (Epley): `weight * (1 + reps / 30)`, only `weight > 0 && reps > 0`.
+- e1RM (Epley): `weight * (1 + reps / 30)`, only `weight > 0 && reps > 0`
+  (`estimateOneRepMax` in `utils/constants.dart`).
   `is_warmup` excluded; `is_failure` INCLUDED (informational only).
-- Volume: `reps * weight_kg`. Same warmup/failure rule.
+- Volume: `reps * weight_kg` (`calculateVolume`). Same warmup/failure rule.
+- Analyse filters (hardcoded in `analyse_screen.dart` — easy to miss):
+  chart series and PR queries use `!isWarmup && rpe >= 7` (+ PRs also require
+  `workouts.endedAt != null` and the studio filter); dashboard stats and
+  monthly volume use `!isWarmup` only (no RPE filter). Time chips are
+  28/84/180/365/730/1095 days (default 365); gym filter default "Alle Studios".
 - Ghost data: strictly per-studio, stepwise from last completed workout with
   that `exercise_id` (1st click → 1st set, …; past end → repeat last set).
   No cross-studio fallback; empty if never done in this studio.
+  Next-exercise suggestion ("Empfohlen") comes from `_predictNextExercise`.
 - Templates store exercise list + `order_idx` ONLY — no default sets/reps/weight.
-- PRs are all-time (studio filter only); dashboard respects studio + time filter.
+- PRs are all-time within the studio filter (plus the `!warmup && rpe >= 7`
+  and finished-workout conditions noted above); dashboard respects studio +
+  time filter.
 - Dates: display `dd.MM.yyyy HH:mm` (`intl`, de locale), store ISO 8601 local.
-  Weight `0.0` kg, e1RM 1 decimal, volume integer, RPE 1–10 int.
+  Weight `0.0` kg, e1RM 1 decimal, volume integer (`k` suffix ≥ 1000 in
+  `formatters.dart`), RPE 1–10 int.
 - Categories: `Brust, Rücken, Beine, Schulter, Arme, Core, Ganzkörper, Cardio,
-  Unterarme, Sonstiges`. Kinds: `machine, free_weight, cable, bodyweight`.
+  Unterarme, Sonstiges`. Kinds: `machine, free_weight, cable, bodyweight`
+  (German labels via `exerciseKindLabels`).
+
+## Known gaps / dead code (verified — don't "discover" these as new)
+
+- `lib/widgets/rest_timer_overlay.dart` is **never imported** — the live rest
+  timer is inline in `ActiveWorkoutScreen`.
+- `fl_chart` dependency unused in `lib/` (custom painter chart instead).
+- No `workout_detail` screen, no template UI, no separate studios screen
+  (spec §4.4 / templates / §4.7 partially unimplemented by design so far).
+- `test/widget_test.dart` is an empty stub.
+- Two vibration paths (Dart `vibration` + native service) — see Native Android.
 
 ## Git & PR conventions
 
 - Feature branches (`feature/...`, `fix/...`), German UI strings welcome but
   branch/commit messages in English, conventional commits
-  (`feat:`, `fix:`, `docs:`, `refactor:`).
+  (`feat:`, `fix:`, `docs:`, `refactor:`). Default branch: `master`.
 - Keep diffs small; update `Flutter_Fitness_Spec_v3.md` when behavior changes.
-  No direct pushes to `main` for agent work — open a PR.
-- Definition of done: `dart format` clean, `flutter analyze` clean,
-  `flutter test` green, Drift codegen re-run if tables changed.
+  No direct pushes to `master` for agent work — open a PR.
+- Definition of done: `dart format` clean, `flutter analyze` adds no new
+  issues, `flutter test` green, Drift codegen re-run if tables changed.
 
 ## References
 
-- Spec: `Flutter_Fitness_Spec_v3.md` · Human intro: `README.md`
+- Spec: `Flutter_Fitness_Spec_v3.md` (~560 lines; §1 Architektur, §2 Schema,
+  §3 Seeds, §4 Screens, §5 Berechnungen, §6 Kategorien, §7 Farbschema,
+  §8 Navigation, §9 Ghost-Daten, §10 Features, §11 Datenformat, §12 Migration,
+  §13 Technische Hinweise, §14 Screens-Zusammenfassung, §15 Nicht enthalten)
+- Human intro: `README.md` (note: README's "30/90/365/1095 days" filter list
+  is stale — actual chips are 28/84/180/365/730/1095)
 - Effective Dart: https://dart.dev/effective-dart (+ /style, /documentation, /usage, /design)
 - Flutter docs: https://docs.flutter.dev · API: https://api.flutter.dev
 - Drift: https://drift.simonbinder.eu (setup, migrations, step_by_step, tests)
