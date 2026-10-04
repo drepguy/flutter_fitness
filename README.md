@@ -22,7 +22,7 @@ Track your workouts, monitor your progress, and analyze your performance. Your d
 ### Analysis & Progress
 - Volume, e1RM, and max weight charts over time
 - Personal records tracking
-- Filter by date range (30, 90, 365, 1095 days)
+- Filter by date range (28, 84, 180, 365, 730, 1095 days)
 - Muscle group breakdown
 
 ### Data Management

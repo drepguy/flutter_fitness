@@ -114,9 +114,9 @@ pattern-matching/primary-constructors/doc-examples, `flutter-add-integration-tes
 flutter pub get
 flutter run                       # Android 10+ device/emulator
 
-flutter analyze                    # must be clean for YOUR changes
-dart format .                      # never skip; generated *.g.dart excluded by tooling
-flutter test                       # test/ (currently one stub — see below)
+flutter analyze                    # must stay at 0 issues
+dart format .                      # all 30 lib/test files incl. *.g.dart
+flutter test                       # 30 unit tests + smoke stub — see below
 flutter build apk --release        # output: build/app/outputs/flutter-apk/
 
 # Drift codegen — after ANY change to tables.dart / app_database.dart:
@@ -134,15 +134,16 @@ flutter test
 
 Verified baseline (2026-10):
 
-- `flutter test` passes — but `test/widget_test.dart` is an empty
-  `// TODO: Add app tests` stub; there is **no real coverage yet**. Add tests
-  when touching logic (`dart-add-unit-test` / `flutter-add-widget-test`).
-- `flutter analyze` currently reports ~25 pre-existing issues (5 warnings:
-  unused field/local in `active_workout_screen.dart`, unused imports in
-  `exercise_assets.dart` + `icon_picker_dialog.dart`; rest are infos like
-  `use_build_context_synchronously`, `unnecessary_underscores`,
-  `unnecessary_brace_in_string_interps`). Don't add new ones; clean up the
-  warnings when you touch those files.
+- `flutter analyze` = **0 issues** (repo scrubbed: unused code/imports
+  removed, all lints fixed — incl. `use_build_context_synchronously`,
+  `curly_braces_in_flow_control_structures`, `unnecessary_underscores`).
+  Keep it at 0; any new issue is a regression.
+- `flutter test` = 31 passing: 30 unit tests for `utils/suggestion_logic.dart`
+  plus `test/widget_test.dart` (empty `// TODO: Add app tests` stub). Add
+  tests when touching logic (`dart-add-unit-test` / `flutter-add-widget-test`).
+- `dart format --set-exit-if-changed .` = clean. Format does **not** exclude
+  generated `*.g.dart` — re-run `dart format .` after build_runner if its
+  output ever differs.
 - Default branch is **`master`** (not `main`).
 
 ## Context7 — use it for library docs
@@ -340,8 +341,8 @@ Channel `com.example.flutter_fitness/rest_timer`:
   (`feat:`, `fix:`, `docs:`, `refactor:`). Default branch: `master`.
 - Keep diffs small; update `Flutter_Fitness_Spec_v3.md` when behavior changes.
   No direct pushes to `master` for agent work — open a PR.
-- Definition of done: `dart format` clean, `flutter analyze` adds no new
-  issues, `flutter test` green, Drift codegen re-run if tables changed.
+- Definition of done: `dart format` clean, `flutter analyze` 0 issues,
+  `flutter test` green, Drift codegen re-run if tables changed.
 
 ## References
 
@@ -349,8 +350,7 @@ Channel `com.example.flutter_fitness/rest_timer`:
   §3 Seeds, §4 Screens, §5 Berechnungen, §6 Kategorien, §7 Farbschema,
   §8 Navigation, §9 Ghost-Daten, §10 Features, §11 Datenformat, §12 Migration,
   §13 Technische Hinweise, §14 Screens-Zusammenfassung, §15 Nicht enthalten)
-- Human intro: `README.md` (note: README's "30/90/365/1095 days" filter list
-  is stale — actual chips are 28/84/180/365/730/1095)
+- Human intro: `README.md`
 - Effective Dart: https://dart.dev/effective-dart (+ /style, /documentation, /usage, /design)
 - Flutter docs: https://docs.flutter.dev · API: https://api.flutter.dev
 - Drift: https://drift.simonbinder.eu (setup, migrations, step_by_step, tests)
