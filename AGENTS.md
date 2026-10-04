@@ -297,8 +297,9 @@ Channel `com.example.flutter_fitness/rest_timer`:
   `workouts.endedAt != null` and the studio filter); dashboard stats and
   monthly volume use `!isWarmup` only (no RPE filter). Time chips are
   28/84/180/365/730/1095 days (default 365); gym filter default "Alle Studios".
-- Ghost data: strictly per-studio, stepwise from last completed workout with
-  that `exercise_id` (1st click → 1st set, …; past end → repeat last set).
+- Ghost data: strictly per-studio, stepwise from the last completed workout
+  in that gym **that contains the exercise** — independent of exercise order
+  or training day split (1st click → 1st set, …; past end → repeat last set).
   No cross-studio fallback; empty if never done in this studio.
   Next-exercise suggestion ("Empfohlen") comes from `_predictNextExercise`.
 - Templates store exercise list + `order_idx` ONLY — no default sets/reps/weight.
