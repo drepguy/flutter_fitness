@@ -426,26 +426,29 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     }
   }
 
+  /// Ghost values for the next set of [ae].
+  ///
+  /// Uses the most recent finished workout in this gym that contains *this
+  /// exercise* — independent of workout order or which training day it was
+  /// (upper body vs. lower body) — then picks stepwise: 1st set → 1st set
+  /// of that session, past the end → repeat its last set.
   Future<WorkoutSet?> _getGhostData(_ActiveExercise ae) async {
-    final lastWorkout = await (widget.db.select(widget.db.workouts)
-          ..where((w) =>
-              w.gymId.equals(widget.gym.id) &
-              w.endedAt.isNotNull() &
-              w.id.isNotValue(_workout.id))
-          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final query = widget.db.select(widget.db.workoutExercises).join([
+      innerJoin(
+        widget.db.workouts,
+        widget.db.workouts.id.equalsExp(widget.db.workoutExercises.workoutId),
+      ),
+    ])
+      ..where(widget.db.workoutExercises.exerciseId.equals(ae.exercise.id) &
+          widget.db.workouts.gymId.equals(widget.gym.id) &
+          widget.db.workouts.endedAt.isNotNull() &
+          widget.db.workouts.id.isNotValue(_workout.id))
+      ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
+      ..limit(1);
 
-    if (lastWorkout == null) return null;
-
-    final lastWe = await (widget.db.select(widget.db.workoutExercises)
-          ..where((we) =>
-              we.workoutId.equals(lastWorkout.id) &
-              we.exerciseId.equals(ae.exercise.id))
-          ..limit(1))
-        .getSingleOrNull();
-
-    if (lastWe == null) return null;
+    final rows = await query.get();
+    if (rows.isEmpty) return null;
+    final lastWe = rows.first.readTable(widget.db.workoutExercises);
 
     final lastSets = await (widget.db.select(widget.db.workoutSets)
           ..where((s) => s.workoutExerciseId.equals(lastWe.id))
