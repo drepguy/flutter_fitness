@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -32,12 +34,14 @@ class ActiveWorkoutScreen extends StatefulWidget {
   State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
-class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerProviderStateMixin {
-  static const _timerChannel = MethodChannel('com.example.flutter_fitness/rest_timer');
+class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen>
+    with TickerProviderStateMixin {
+  static const _timerChannel = MethodChannel(
+    'com.example.flutter_fitness/rest_timer',
+  );
   late Workout _workout;
   List<_ActiveExercise> _exercises = [];
   bool _saving = false;
-  int _restSeconds = 0;
   AnimationController? _restTicker;
   final ValueNotifier<int> _restDisplaySeconds = ValueNotifier(0);
   int _restEndTimeMillis = 0;
@@ -76,7 +80,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     if (widget.workout != null) {
       _workout = widget.workout!;
       if (_workout.endedAt != null) {
-        _elapsedSeconds.value = _workout.endedAt!.difference(_workout.startedAt).inSeconds;
+        _elapsedSeconds.value = _workout.endedAt!
+            .difference(_workout.startedAt)
+            .inSeconds;
       } else {
         _startStopwatch();
       }
@@ -107,9 +113,15 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     _restDisplaySeconds.dispose();
     _restDisplayRunning.dispose();
     _timerChannel.setMethodCallHandler(null);
-    for (final c in _controllers.values) { c.dispose(); }
-    for (final f in _focusNodes.values) { f.dispose(); }
-    for (final c in _noteControllers.values) { c.dispose(); }
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    for (final f in _focusNodes.values) {
+      f.dispose();
+    }
+    for (final c in _noteControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -132,37 +144,41 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
 
   void _startRestTimer(int seconds) {
     _restTicker?.stop();
-    _restSeconds = seconds;
     _restDisplaySeconds.value = seconds;
     _restDisplayRunning.value = true;
     if (_useNativeTimer) {
-      _timerChannel.invokeMethod('startTimer', {'duration': seconds}).then((endTime) {
+      _timerChannel.invokeMethod('startTimer', {'duration': seconds}).then((
+        endTime,
+      ) {
         if (endTime is int) {
           _restEndTimeMillis = endTime;
         }
       });
     } else {
-      _restEndTimeMillis = DateTime.now().millisecondsSinceEpoch + seconds * 1000;
+      _restEndTimeMillis =
+          DateTime.now().millisecondsSinceEpoch + seconds * 1000;
     }
     _startDisplayTimer();
   }
 
   void _startDisplayTimer() {
     _restTicker?.dispose();
-    _restTicker = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..addListener(() {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final displaySeconds = ((_restEndTimeMillis - now) / 1000).floor().clamp(0, 999);
-        if (displaySeconds <= 0) {
-          _restTicker?.stop();
-          _restDisplayRunning.value = false;
-          _restDisplaySeconds.value = 0;
-        } else if (_restDisplaySeconds.value != displaySeconds) {
-          _restDisplaySeconds.value = displaySeconds;
-        }
-      })..repeat();
+    _restTicker =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..addListener(() {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            final displaySeconds = ((_restEndTimeMillis - now) / 1000)
+                .floor()
+                .clamp(0, 999);
+            if (displaySeconds <= 0) {
+              _restTicker?.stop();
+              _restDisplayRunning.value = false;
+              _restDisplaySeconds.value = 0;
+            } else if (_restDisplaySeconds.value != displaySeconds) {
+              _restDisplaySeconds.value = displaySeconds;
+            }
+          })
+          ..repeat();
   }
 
   void _cancelRestTimer() {
@@ -195,11 +211,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   _SetControllers _getControllers(WorkoutSet set) {
-    return _controllers.putIfAbsent(set.id, () => _SetControllers(
-      reps: TextEditingController(text: '${set.reps}'),
-      weight: TextEditingController(text: formatWeight(set.weightKg)),
-      rpe: TextEditingController(text: set.rpe?.toString() ?? ''),
-    ));
+    return _controllers.putIfAbsent(
+      set.id,
+      () => _SetControllers(
+        reps: TextEditingController(text: '${set.reps}'),
+        weight: TextEditingController(text: formatWeight(set.weightKg)),
+        rpe: TextEditingController(text: set.rpe?.toString() ?? ''),
+      ),
+    );
   }
 
   _SetFocusNodes _getFocusNodes(WorkoutSet set) {
@@ -209,19 +228,25 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       fn.reps.addListener(() {
         if (fn.reps.hasFocus) {
           c.reps.selection = TextSelection(
-              baseOffset: 0, extentOffset: c.reps.text.length);
+            baseOffset: 0,
+            extentOffset: c.reps.text.length,
+          );
         }
       });
       fn.weight.addListener(() {
         if (fn.weight.hasFocus) {
           c.weight.selection = TextSelection(
-              baseOffset: 0, extentOffset: c.weight.text.length);
+            baseOffset: 0,
+            extentOffset: c.weight.text.length,
+          );
         }
       });
       fn.rpe.addListener(() {
         if (fn.rpe.hasFocus) {
           c.rpe.selection = TextSelection(
-              baseOffset: 0, extentOffset: c.rpe.text.length);
+            baseOffset: 0,
+            extentOffset: c.rpe.text.length,
+          );
         }
       });
       return fn;
@@ -230,10 +255,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
 
   void _startStopwatch() {
     _stopwatchTimer?.cancel();
-    _elapsedSeconds.value = DateTime.now().difference(_workout.startedAt).inSeconds;
+    _elapsedSeconds.value = DateTime.now()
+        .difference(_workout.startedAt)
+        .inSeconds;
     _stopwatchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
-        _elapsedSeconds.value = DateTime.now().difference(_workout.startedAt).inSeconds;
+        _elapsedSeconds.value = DateTime.now()
+            .difference(_workout.startedAt)
+            .inSeconds;
       }
     });
   }
@@ -243,7 +272,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     final m = (totalSeconds % 3600) ~/ 60;
     final s = totalSeconds % 60;
     if (h > 0) {
-      return '${h}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
@@ -264,41 +293,42 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
 
   Future<void> _createWorkout() async {
     final now = DateTime.now();
-    final id = await widget.db.into(widget.db.workouts).insert(
+    final id = await widget.db
+        .into(widget.db.workouts)
+        .insert(
           WorkoutsCompanion.insert(
             gymId: Value(widget.gym.id),
             startedAt: now,
             createdAt: now,
           ),
         );
-    final workout = await (widget.db.select(widget.db.workouts)
-          ..where((w) => w.id.equals(id)))
-        .getSingle();
+    final workout = await (widget.db.select(
+      widget.db.workouts,
+    )..where((w) => w.id.equals(id))).getSingle();
     setState(() => _workout = workout);
     _startStopwatch();
   }
 
   Future<void> _loadExercises() async {
-    final wes = await (widget.db.select(widget.db.workoutExercises)
-          ..where((we) => we.workoutId.equals(_workout.id))
-          ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
-        .get();
+    final wes =
+        await (widget.db.select(widget.db.workoutExercises)
+              ..where((we) => we.workoutId.equals(_workout.id))
+              ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
+            .get();
 
     final activeExercises = <_ActiveExercise>[];
     for (final we in wes) {
-      final exercise =
-          await (widget.db.select(widget.db.exercises)
-                ..where((e) => e.id.equals(we.exerciseId)))
-              .getSingle();
-      final sets = await (widget.db.select(widget.db.workoutSets)
-            ..where((s) => s.workoutExerciseId.equals(we.id))
-            ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
-          .get();
-      activeExercises.add(_ActiveExercise(
-        workoutExercise: we,
-        exercise: exercise,
-        sets: sets,
-      ));
+      final exercise = await (widget.db.select(
+        widget.db.exercises,
+      )..where((e) => e.id.equals(we.exerciseId))).getSingle();
+      final sets =
+          await (widget.db.select(widget.db.workoutSets)
+                ..where((s) => s.workoutExerciseId.equals(we.id))
+                ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
+              .get();
+      activeExercises.add(
+        _ActiveExercise(workoutExercise: we, exercise: exercise, sets: sets),
+      );
       _noteControllers[we.id] = TextEditingController(text: we.notes ?? '');
     }
     setState(() => _exercises = activeExercises);
@@ -306,24 +336,25 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
 
   Future<void> _addExercise(Exercise exercise) async {
     final orderIdx = _exercises.length;
-    final weId = await widget.db.into(widget.db.workoutExercises).insert(
+    final weId = await widget.db
+        .into(widget.db.workoutExercises)
+        .insert(
           WorkoutExercisesCompanion.insert(
             workoutId: _workout.id,
             exerciseId: exercise.id,
             orderIdx: orderIdx,
           ),
         );
-    final we = await (widget.db.select(widget.db.workoutExercises)
-          ..where((w) => w.id.equals(weId)))
-        .getSingle();
+    final we = await (widget.db.select(
+      widget.db.workoutExercises,
+    )..where((w) => w.id.equals(weId))).getSingle();
     setState(() {
-      _exercises.add(_ActiveExercise(
-        workoutExercise: we,
-        exercise: exercise,
-        sets: [],
-      ));
+      _exercises.add(
+        _ActiveExercise(workoutExercise: we, exercise: exercise, sets: []),
+      );
       _noteControllers[we.id] = TextEditingController();
     });
+    if (!mounted) return;
     FocusScope.of(context).unfocus();
     _scrollToBottom();
   }
@@ -352,8 +383,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     // What usually comes next after the most recent exercise that has any
     // history (newly added exercises have none yet).
     for (final active in _exercises.reversed) {
-      final voted =
-          mostCommonSuccessor(await _successorsOf(active.exercise.id), doneIds);
+      final voted = mostCommonSuccessor(
+        await _successorsOf(active.exercise.id),
+        doneIds,
+      );
       if (voted != null) return _exerciseById(voted);
     }
 
@@ -376,10 +409,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   /// Finished workouts of this gym (excluding the open one), newest first.
   Future<List<Workout>> _finishedWorkoutsInGym({required int limit}) {
     return (widget.db.select(widget.db.workouts)
-          ..where((w) =>
-              w.gymId.equals(widget.gym.id) &
-              w.endedAt.isNotNull() &
-              w.id.isNotValue(_workout.id))
+          ..where(
+            (w) =>
+                w.gymId.equals(widget.gym.id) &
+                w.endedAt.isNotNull() &
+                w.id.isNotValue(_workout.id),
+          )
           ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
           ..limit(limit))
         .get();
@@ -387,16 +422,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
 
   /// Exercise IDs of [workoutId] in training order.
   Future<List<int>> _orderedExerciseIds(int workoutId) async {
-    final wes = await (widget.db.select(widget.db.workoutExercises)
-          ..where((we) => we.workoutId.equals(workoutId))
-          ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
-        .get();
+    final wes =
+        await (widget.db.select(widget.db.workoutExercises)
+              ..where((we) => we.workoutId.equals(workoutId))
+              ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
+            .get();
     return wes.map((we) => we.exerciseId).toList();
   }
 
-  Future<Exercise?> _exerciseById(int id) =>
-      (widget.db.select(widget.db.exercises)..where((e) => e.id.equals(id)))
-          .getSingleOrNull();
+  Future<Exercise?> _exerciseById(int id) => (widget.db.select(
+    widget.db.exercises,
+  )..where((e) => e.id.equals(id))).getSingleOrNull();
 
   /// Opener heuristic for an empty session: prefer the 2nd-last workout's
   /// first exercise so alternating training days get the other day's
@@ -436,18 +472,23 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   /// Immediate successors of [anchorId] across this gym's finished
   /// workouts, newest first (`null` when the anchor ends a workout).
   Future<List<int?>> _successorsOf(int anchorId) async {
-    final query = widget.db.select(widget.db.workoutExercises).join([
-      innerJoin(
-        widget.db.workouts,
-        widget.db.workouts.id.equalsExp(widget.db.workoutExercises.workoutId),
-      ),
-    ])
-      ..where(widget.db.workoutExercises.exerciseId.equals(anchorId) &
-          widget.db.workouts.gymId.equals(widget.gym.id) &
-          widget.db.workouts.endedAt.isNotNull() &
-          widget.db.workouts.id.isNotValue(_workout.id))
-      ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
-      ..limit(10);
+    final query =
+        widget.db.select(widget.db.workoutExercises).join([
+            innerJoin(
+              widget.db.workouts,
+              widget.db.workouts.id.equalsExp(
+                widget.db.workoutExercises.workoutId,
+              ),
+            ),
+          ])
+          ..where(
+            widget.db.workoutExercises.exerciseId.equals(anchorId) &
+                widget.db.workouts.gymId.equals(widget.gym.id) &
+                widget.db.workouts.endedAt.isNotNull() &
+                widget.db.workouts.id.isNotValue(_workout.id),
+          )
+          ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
+          ..limit(10);
 
     final successors = <int?>[];
     final seenWorkouts = <int>{};
@@ -455,19 +496,19 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       final workout = row.readTableOrNull(widget.db.workouts);
       if (workout == null || !seenWorkouts.add(workout.id)) continue;
       successors.add(
-          immediateSuccessor(anchorId, await _orderedExerciseIds(workout.id)));
+        immediateSuccessor(anchorId, await _orderedExerciseIds(workout.id)),
+      );
     }
     return successors;
   }
 
   Future<void> _showExercisePicker() async {
     final suggested = await _predictNextExercise();
+    if (!mounted) return;
     final exercise = await showDialog<Exercise>(
       context: context,
-      builder: (_) => ExercisePickerDialog(
-        db: widget.db,
-        suggestedExercise: suggested,
-      ),
+      builder: (_) =>
+          ExercisePickerDialog(db: widget.db, suggestedExercise: suggested),
     );
     if (exercise != null) _addExercise(exercise);
   }
@@ -491,7 +532,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           _exerciseDeleteTimer?.cancel();
           setState(() {
             _exercises.insert(
-                index < _exercises.length ? index : _exercises.length, ae);
+              index < _exercises.length ? index : _exercises.length,
+              ae,
+            );
           });
         },
       ),
@@ -513,9 +556,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   /// disposes their controllers.
   Future<void> _flushPendingExerciseDeletes() async {
     for (final del in List.of(_pendingExerciseDeletes)) {
-      await (widget.db.delete(widget.db.workoutExercises)
-            ..where((w) => w.id.equals(del.workoutExercise.id)))
-          .go();
+      await (widget.db.delete(
+        widget.db.workoutExercises,
+      )..where((w) => w.id.equals(del.workoutExercise.id))).go();
       for (final set in del.sets) {
         _controllers.remove(set.id)?.dispose();
         _focusNodes.remove(set.id)?.dispose();
@@ -527,7 +570,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   Future<void> _addSet(_ActiveExercise ae) async {
     final ghostData = await _getGhostData(ae);
 
-    await widget.db.into(widget.db.workoutSets).insert(
+    await widget.db
+        .into(widget.db.workoutSets)
+        .insert(
           WorkoutSetsCompanion.insert(
             workoutExerciseId: ae.workoutExercise.id,
             setNo: 9999,
@@ -538,10 +583,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
         );
     await _renumberSets(ae.workoutExercise.id);
     final pendingIds = _pendingDeletes.map((s) => s.id).toSet();
-    final sets = await (widget.db.select(widget.db.workoutSets)
-          ..where((s) => s.workoutExerciseId.equals(ae.workoutExercise.id))
-          ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
-        .get();
+    final sets =
+        await (widget.db.select(widget.db.workoutSets)
+              ..where((s) => s.workoutExerciseId.equals(ae.workoutExercise.id))
+              ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
+            .get();
     setState(() {
       ae.sets
         ..clear()
@@ -559,27 +605,33 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   /// (upper body vs. lower body) — then picks stepwise: 1st set → 1st set
   /// of that session, past the end → repeat its last set.
   Future<WorkoutSet?> _getGhostData(_ActiveExercise ae) async {
-    final query = widget.db.select(widget.db.workoutExercises).join([
-      innerJoin(
-        widget.db.workouts,
-        widget.db.workouts.id.equalsExp(widget.db.workoutExercises.workoutId),
-      ),
-    ])
-      ..where(widget.db.workoutExercises.exerciseId.equals(ae.exercise.id) &
-          widget.db.workouts.gymId.equals(widget.gym.id) &
-          widget.db.workouts.endedAt.isNotNull() &
-          widget.db.workouts.id.isNotValue(_workout.id))
-      ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
-      ..limit(1);
+    final query =
+        widget.db.select(widget.db.workoutExercises).join([
+            innerJoin(
+              widget.db.workouts,
+              widget.db.workouts.id.equalsExp(
+                widget.db.workoutExercises.workoutId,
+              ),
+            ),
+          ])
+          ..where(
+            widget.db.workoutExercises.exerciseId.equals(ae.exercise.id) &
+                widget.db.workouts.gymId.equals(widget.gym.id) &
+                widget.db.workouts.endedAt.isNotNull() &
+                widget.db.workouts.id.isNotValue(_workout.id),
+          )
+          ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
+          ..limit(1);
 
     final rows = await query.get();
     if (rows.isEmpty) return null;
     final lastWe = rows.first.readTable(widget.db.workoutExercises);
 
-    final lastSets = await (widget.db.select(widget.db.workoutSets)
-          ..where((s) => s.workoutExerciseId.equals(lastWe.id))
-          ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
-        .get();
+    final lastSets =
+        await (widget.db.select(widget.db.workoutSets)
+              ..where((s) => s.workoutExerciseId.equals(lastWe.id))
+              ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
+            .get();
 
     if (lastSets.isEmpty) return null;
 
@@ -590,16 +642,23 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     return lastSets.last;
   }
 
-  Future<void> _updateSet(WorkoutSet set, {int? reps, double? weightKg, int? rpe}) async {
+  Future<void> _updateSet(
+    WorkoutSet set, {
+    int? reps,
+    double? weightKg,
+    int? rpe,
+  }) async {
     _saveTimers[set.id]?.cancel();
     _saveTimers[set.id] = Timer(const Duration(milliseconds: 500), () async {
-      await (widget.db.update(widget.db.workoutSets)
-            ..where((s) => s.id.equals(set.id)))
-          .write(WorkoutSetsCompanion(
-        reps: reps != null ? Value(reps) : const Value.absent(),
-        weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
-        rpe: rpe != null ? Value(rpe) : const Value.absent(),
-      ));
+      await (widget.db.update(
+        widget.db.workoutSets,
+      )..where((s) => s.id.equals(set.id))).write(
+        WorkoutSetsCompanion(
+          reps: reps != null ? Value(reps) : const Value.absent(),
+          weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
+          rpe: rpe != null ? Value(rpe) : const Value.absent(),
+        ),
+      );
     });
   }
 
@@ -634,9 +693,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     _deleteTimer?.cancel();
     _deleteTimer = Timer(const Duration(seconds: 8), () async {
       for (final s in List.of(_pendingDeletes)) {
-        await (widget.db.delete(widget.db.workoutSets)
-              ..where((ws) => ws.id.equals(s.id)))
-            .go();
+        await (widget.db.delete(
+          widget.db.workoutSets,
+        )..where((ws) => ws.id.equals(s.id))).go();
       }
       _pendingDeletes.clear();
       await _renumberSets(ae.workoutExercise.id);
@@ -644,12 +703,15 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   Future<void> _renumberSets(int workoutExerciseId) async {
-    final allSets = await (widget.db.select(widget.db.workoutSets)
-          ..where((s) => s.workoutExerciseId.equals(workoutExerciseId))
-          ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
-        .get();
+    final allSets =
+        await (widget.db.select(widget.db.workoutSets)
+              ..where((s) => s.workoutExerciseId.equals(workoutExerciseId))
+              ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
+            .get();
     final pendingIds = _pendingDeletes.map((s) => s.id).toSet();
-    final activeSets = allSets.where((s) => !pendingIds.contains(s.id)).toList();
+    final activeSets = allSets
+        .where((s) => !pendingIds.contains(s.id))
+        .toList();
     for (int i = 0; i < activeSets.length; i++) {
       if (activeSets[i].setNo != i + 1) {
         await (widget.db.update(widget.db.workoutSets)
@@ -663,8 +725,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     final buffer = StringBuffer();
     final start = _workout.startedAt;
     final end = _workout.endedAt;
-    final dateStr = '${start.day.toString().padLeft(2, '0')}.${start.month.toString().padLeft(2, '0')}.${start.year}';
-    final startTime = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${start.day.toString().padLeft(2, '0')}.${start.month.toString().padLeft(2, '0')}.${start.year}';
+    final startTime =
+        '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
 
     buffer.writeln('Training: ${widget.gym.name}');
     buffer.writeln('Datum: $dateStr');
@@ -682,8 +746,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     for (final ae in _exercises) {
       buffer.writeln('${ae.exercise.name} (${ae.exercise.category})');
       for (final set in ae.sets) {
-        final time = '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
-        final weight = set.weightKg == 0 ? 'Bodyweight' : '${set.weightKg.toStringAsFixed(1)}kg';
+        final time =
+            '${set.createdAt.hour.toString().padLeft(2, '0')}:${set.createdAt.minute.toString().padLeft(2, '0')}';
+        final weight = set.weightKg == 0
+            ? 'Bodyweight'
+            : '${set.weightKg.toStringAsFixed(1)}kg';
         final parts = [
           '  ${set.setNo}. ${set.reps} x $weight',
           if (set.rpe != null) 'RPE ${set.rpe}',
@@ -701,18 +768,16 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       buffer.writeln('Notizen: ${_workout.notes}');
     }
 
-    SharePlus.instance.share(
-      ShareParams(text: buffer.toString()),
-    );
+    SharePlus.instance.share(ShareParams(text: buffer.toString()));
   }
 
   Future<void> _finishWorkout(String? notes) async {
     setState(() => _saving = true);
     _deleteTimer?.cancel();
     for (final s in _pendingDeletes) {
-      await (widget.db.delete(widget.db.workoutSets)
-            ..where((ws) => ws.id.equals(s.id)))
-          .go();
+      await (widget.db.delete(
+        widget.db.workoutSets,
+      )..where((ws) => ws.id.equals(s.id))).go();
     }
     _pendingDeletes.clear();
     _exerciseDeleteTimer?.cancel();
@@ -738,16 +803,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       if (lastSetTime != null) {
         endedAt = lastSetTime.add(const Duration(minutes: 1));
       }
-      await (widget.db.update(widget.db.workouts)
-            ..where((w) => w.id.equals(_workout.id)))
-          .write(WorkoutsCompanion(
-        endedAt: Value(endedAt),
-        notes: notes != null ? Value(notes) : const Value.absent(),
-      ));
+      await (widget.db.update(
+        widget.db.workouts,
+      )..where((w) => w.id.equals(_workout.id))).write(
+        WorkoutsCompanion(
+          endedAt: Value(endedAt),
+          notes: notes != null ? Value(notes) : const Value.absent(),
+        ),
+      );
     } else {
-      await (widget.db.update(widget.db.workouts)
-            ..where((w) => w.id.equals(_workout.id)))
-          .write(updates);
+      await (widget.db.update(
+        widget.db.workouts,
+      )..where((w) => w.id.equals(_workout.id))).write(updates);
     }
     if (mounted) Navigator.pop(context);
 
@@ -759,16 +826,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     _pendingDeletes.clear();
     _exerciseDeleteTimer?.cancel();
     _pendingExerciseDeletes.clear();
-    await (widget.db.delete(widget.db.workoutSets)
-          ..where((s) =>
-              s.workoutExerciseId.isIn(_exercises.map((e) => e.workoutExercise.id))))
+    await (widget.db.delete(widget.db.workoutSets)..where(
+          (s) => s.workoutExerciseId.isIn(
+            _exercises.map((e) => e.workoutExercise.id),
+          ),
+        ))
         .go();
-    await (widget.db.delete(widget.db.workoutExercises)
-          ..where((we) => we.workoutId.equals(_workout.id)))
-        .go();
-    await (widget.db.delete(widget.db.workouts)
-          ..where((w) => w.id.equals(_workout.id)))
-        .go();
+    await (widget.db.delete(
+      widget.db.workoutExercises,
+    )..where((we) => we.workoutId.equals(_workout.id))).go();
+    await (widget.db.delete(
+      widget.db.workouts,
+    )..where((w) => w.id.equals(_workout.id))).go();
     if (mounted) Navigator.pop(context);
   }
 
@@ -832,17 +901,28 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                                 color: AppTheme.primary.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.add,
-                                  size: 36, color: AppTheme.primary),
+                              child: const Icon(
+                                Icons.add,
+                                size: 36,
+                                color: AppTheme.primary,
+                              ),
                             ),
                             const SizedBox(height: 16),
-                            const Text('Übung hinzufügen',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Text(
+                              'Übung hinzufügen',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('Tippe hier um zu starten',
-                                style: TextStyle(
-                                    color: AppTheme.muted, fontSize: 13)),
+                            Text(
+                              'Tippe hier um zu starten',
+                              style: TextStyle(
+                                color: AppTheme.muted,
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -866,56 +946,65 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   Widget _buildExerciseCard(_ActiveExercise ae) {
-    final idx = _exercises.indexOf(ae) + 1;
     return RepaintBoundary(
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
         child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildExerciseIcon(ae.exercise),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(ae.exercise.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(ae.exercise.category,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildExerciseIcon(ae.exercise),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ae.exercise.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          ae.exercise.category,
                           style: const TextStyle(
-                              color: AppTheme.muted, fontSize: 12)),
-                    ],
+                            color: AppTheme.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: AppTheme.error),
-                  onPressed: () => _removeExercise(ae),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildSetTable(ae),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => _addSet(ae),
-                child: const Text('+ Satz'),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppTheme.error,
+                    ),
+                    onPressed: () => _removeExercise(ae),
+                  ),
+                ],
               ),
-            ),
-            _buildNoteField(ae),
-          ],
+              const SizedBox(height: 12),
+              _buildSetTable(ae),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _addSet(ae),
+                  child: const Text('+ Satz'),
+                ),
+              ),
+              _buildNoteField(ae),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
   Widget _buildExerciseIcon(Exercise exercise) {
-    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    final imagePath =
+        getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -924,7 +1013,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           width: 44,
           height: 44,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackIcon(exercise),
+          errorBuilder: (_, _, _) => _buildFallbackIcon(exercise),
         ),
       );
     }
@@ -961,34 +1050,50 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           Row(
             children: const [
               SizedBox(
-                  width: 40,
-                  child: Text('Satz',
-                      style: TextStyle(
-                          color: AppTheme.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold))),
+                width: 40,
+                child: Text(
+                  'Satz',
+                  style: TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               Expanded(
-                  child: Text('Wdh.',
-                      style: TextStyle(
-                          color: AppTheme.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center)),
+                child: Text(
+                  'Wdh.',
+                  style: TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               Expanded(
-                  child: Text('kg',
-                      style: TextStyle(
-                          color: AppTheme.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center)),
+                child: Text(
+                  'kg',
+                  style: TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               SizedBox(
-                  width: 50,
-                  child: Text('RPE',
-                      style: TextStyle(
-                          color: AppTheme.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center)),
+                width: 50,
+                child: Text(
+                  'RPE',
+                  style: TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               SizedBox(width: 32),
             ],
           ),
@@ -1012,7 +1117,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
         color: isEven ? _altRowColor : null,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
-            children: [
+          children: [
             SizedBox(
               width: 40,
               child: Column(
@@ -1022,9 +1127,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                   Text(
                     '$displayNo',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
-                        fontSize: 13),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                      fontSize: 13,
+                    ),
                   ),
                   Text(
                     timeStr,
@@ -1041,7 +1147,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.reps.selection = TextSelection(
-                    baseOffset: 0, extentOffset: c.reps.text.length),
+                  baseOffset: 0,
+                  extentOffset: c.reps.text.length,
+                ),
                 textInputAction: TextInputAction.next,
                 onSubmitted: (_) =>
                     FocusScope.of(context).requestFocus(f.weight),
@@ -1064,15 +1172,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
               child: TextField(
                 controller: c.weight,
                 focusNode: f.weight,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.weight.selection = TextSelection(
-                    baseOffset: 0, extentOffset: c.weight.text.length),
+                  baseOffset: 0,
+                  extentOffset: c.weight.text.length,
+                ),
                 textInputAction: TextInputAction.next,
-                onSubmitted: (_) =>
-                    FocusScope.of(context).requestFocus(f.rpe),
+                onSubmitted: (_) => FocusScope.of(context).requestFocus(f.rpe),
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.zero,
                   isCollapsed: true,
@@ -1096,7 +1206,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
                 onTap: () => c.rpe.selection = TextSelection(
-                    baseOffset: 0, extentOffset: c.rpe.text.length),
+                  baseOffset: 0,
+                  extentOffset: c.rpe.text.length,
+                ),
                 textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: '-',
@@ -1128,9 +1240,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   Widget _buildNoteField(_ActiveExercise ae) {
-    final controller =
-        _noteControllers.putIfAbsent(ae.workoutExercise.id, () => TextEditingController());
-    if (controller.text.isEmpty && (ae.workoutExercise.notes ?? '').isNotEmpty) {
+    final controller = _noteControllers.putIfAbsent(
+      ae.workoutExercise.id,
+      () => TextEditingController(),
+    );
+    if (controller.text.isEmpty &&
+        (ae.workoutExercise.notes ?? '').isNotEmpty) {
       controller.text = ae.workoutExercise.notes!;
     }
     return Padding(
@@ -1142,7 +1257,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           hintText: 'Notiz...',
           hintStyle: TextStyle(color: AppTheme.muted.withValues(alpha: 0.5)),
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 6,
+          ),
           border: InputBorder.none,
           suffixIcon: controller.text.isNotEmpty
               ? GestureDetector(
@@ -1150,7 +1268,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                     controller.clear();
                     _saveExerciseNote(ae, '');
                   },
-                  child: const Icon(Icons.close, size: 16, color: AppTheme.muted),
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: AppTheme.muted,
+                  ),
                 )
               : null,
         ),
@@ -1160,9 +1282,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   }
 
   void _saveExerciseNote(_ActiveExercise ae, String note) {
-    (widget.db.update(widget.db.workoutExercises)
-          ..where((we) => we.id.equals(ae.workoutExercise.id)))
-        .write(WorkoutExercisesCompanion(notes: Value(note.isEmpty ? null : note)));
+    (widget.db.update(
+      widget.db.workoutExercises,
+    )..where((we) => we.id.equals(ae.workoutExercise.id))).write(
+      WorkoutExercisesCompanion(notes: Value(note.isEmpty ? null : note)),
+    );
   }
 
   Widget _buildBottomBar() {
@@ -1186,14 +1310,20 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('$totalSets Sätze',
-                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                  Text(
+                    '$totalSets Sätze',
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+                  ),
                   const SizedBox(width: 16),
-                  Text('${formatVolume(totalVolume)} kg',
-                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                  Text(
+                    '${formatVolume(totalVolume)} kg',
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+                  ),
                   const SizedBox(width: 16),
-                  Text('${_exercises.length} Übungen',
-                      style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                  Text(
+                    '${_exercises.length} Übungen',
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -1208,7 +1338,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
               const Spacer(),
               if (_exercises.isEmpty)
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.error,
+                  ),
                   onPressed: () => _showCancelDialog(),
                   child: const Text('Abbrechen'),
                 )
@@ -1221,7 +1353,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                             context: context,
                             builder: (_) => FinishDialog(
                               exerciseCount: _exercises.length,
-                              setCount: _exercises.fold(0, (sum, e) => sum + e.sets.length),
+                              setCount: _exercises.fold(
+                                0,
+                                (sum, e) => sum + e.sets.length,
+                              ),
                             ),
                           );
                           if (result != null) {
@@ -1232,7 +1367,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Fertig'),
                 ),
             ],
@@ -1276,7 +1412,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
                     onTap: _cancelRestTimer,
                     child: const Padding(
                       padding: EdgeInsets.all(8),
-                      child: Icon(Icons.close, size: 20, color: AppTheme.secondary),
+                      child: Icon(
+                        Icons.close,
+                        size: 20,
+                        color: AppTheme.secondary,
+                      ),
                     ),
                   ),
                 ],
@@ -1339,7 +1479,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Training pausieren?'),
-        content: const Text('Das Training wird gespeichert und kann später fortgesetzt werden.'),
+        content: const Text(
+          'Das Training wird gespeichert und kann später fortgesetzt werden.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -1370,7 +1512,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       initialTime: TimeOfDay.fromDateTime(_workout.startedAt),
     );
     if (time == null) return;
-    final newStart = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    final newStart = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      time.hour,
+      time.minute,
+    );
     await (widget.db.update(widget.db.workouts)
           ..where((w) => w.id.equals(_workout.id)))
         .write(WorkoutsCompanion(startedAt: Value(newStart)));
@@ -1390,7 +1538,13 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       initialTime: TimeOfDay.fromDateTime(_workout.endedAt ?? DateTime.now()),
     );
     if (time == null) return;
-    final newEnd = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    final newEnd = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      time.hour,
+      time.minute,
+    );
     await (widget.db.update(widget.db.workouts)
           ..where((w) => w.id.equals(_workout.id)))
         .write(WorkoutsCompanion(endedAt: Value(newEnd)));
@@ -1467,9 +1621,9 @@ class _SetFocusNodes {
   final FocusNode rpe;
 
   _SetFocusNodes()
-      : reps = FocusNode(),
-        weight = FocusNode(),
-        rpe = FocusNode();
+    : reps = FocusNode(),
+      weight = FocusNode(),
+      rpe = FocusNode();
 
   void dispose() {
     reps.dispose();

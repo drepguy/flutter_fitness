@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/backup_service.dart';
@@ -61,7 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveRestPresets() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
-        'rest_presets', _restPresets.map((e) => e.toString()).toList());
+      'rest_presets',
+      _restPresets.map((e) => e.toString()).toList(),
+    );
   }
 
   Future<void> _saveVibrationSettings() async {
@@ -92,9 +95,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final file = await backupService.saveBackup();
     await _loadBackupData();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backup erstellt: ${file.path}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Backup erstellt: ${file.path}')));
     }
   }
 
@@ -103,7 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Backup wiederherstellen?'),
-        content: Text('Daten von ${entry.dateLabel} werden importiert. Bestehende Einträge werden nicht überschrieben.'),
+        content: Text(
+          'Daten von ${entry.dateLabel} werden importiert. Bestehende Einträge werden nicht überschrieben.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -184,7 +189,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Studio löschen?'),
         content: const Text(
-            'Übungen und Trainings dieses Studios bleiben erhalten, verlieren aber die Studio-Zuordnung.'),
+          'Übungen und Trainings dieses Studios bleiben erhalten, verlieren aber die Studio-Zuordnung.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -199,9 +205,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed == true) {
-      await (widget.db.delete(widget.db.gyms)
-            ..where((g) => g.id.equals(gym.id)))
-          .go();
+      await (widget.db.delete(
+        widget.db.gyms,
+      )..where((g) => g.id.equals(gym.id))).go();
       _loadData();
     }
   }
@@ -224,7 +230,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Center(
             child: Text(
               'Exercise illustrations by RepDB (repdb.co)',
-              style: TextStyle(color: AppTheme.muted.withValues(alpha: 0.5), fontSize: 11),
+              style: TextStyle(
+                color: AppTheme.muted.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -244,9 +253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: const [
                 Icon(Icons.vibration, color: AppTheme.primary),
                 SizedBox(width: 8),
-                Text('Vibration',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Vibration',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -316,9 +326,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: const [
                 Icon(Icons.timer, color: AppTheme.primary),
                 SizedBox(width: 8),
-                Text('Rest Timer Presets',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Rest Timer Presets',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -334,8 +345,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: const TextStyle(fontSize: 16),
                       decoration: const InputDecoration(
                         suffixText: 's',
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
                       ),
                       onChanged: (v) {
                         final val = int.tryParse(v);
@@ -414,17 +427,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: const [
                 Icon(Icons.cloud_upload, color: AppTheme.primary),
                 SizedBox(width: 8),
-                Text('Backup',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Backup',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Automatisches Backup'),
-              subtitle: const Text('Täglich beim Start',
-                  style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+              subtitle: const Text(
+                'Täglich beim Start',
+                style: TextStyle(color: AppTheme.muted, fontSize: 12),
+              ),
               value: _autoBackupEnabled,
               onChanged: _toggleAutoBackup,
             ),
@@ -439,39 +455,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             if (_backups.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('Bestehende Backups',
-                  style: TextStyle(
-                      color: AppTheme.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'Bestehende Backups',
+                style: TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
-              ...(_backups.map((entry) => Card(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: ListTile(
-                      dense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12),
-                      title: Text(entry.dateLabel,
-                          style: const TextStyle(fontSize: 13)),
-                      subtitle: Text(entry.sizeLabel,
-                          style: TextStyle(
-                              color: AppTheme.muted, fontSize: 11)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.restore, size: 18),
-                            onPressed: () => _restoreBackup(entry),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete,
-                                size: 18, color: AppTheme.error),
-                            onPressed: () => _deleteBackup(entry),
-                          ),
-                        ],
-                      ),
+              ...(_backups.map(
+                (entry) => Card(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(
+                      entry.dateLabel,
+                      style: const TextStyle(fontSize: 13),
                     ),
-                  ))),
+                    subtitle: Text(
+                      entry.sizeLabel,
+                      style: TextStyle(color: AppTheme.muted, fontSize: 11),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.restore, size: 18),
+                          onPressed: () => _restoreBackup(entry),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete,
+                            size: 18,
+                            color: AppTheme.error,
+                          ),
+                          onPressed: () => _deleteBackup(entry),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
             ],
           ],
         ),
@@ -489,9 +515,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: const [
               Icon(Icons.fitness_center, color: AppTheme.primary),
               SizedBox(width: 8),
-              Text('Studios',
-                  style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Studios',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
         ),
@@ -508,28 +535,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Row(
                   children: [
                     Expanded(
-                      child: Text(gym.name,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        gym.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                     if (gym.isSystem)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('Standard',
-                            style: TextStyle(
-                                fontSize: 11, color: AppTheme.primary)),
+                        child: const Text(
+                          'Standard',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.primary,
+                          ),
+                        ),
                       ),
                   ],
                 ),
                 subtitle: gym.city != null
-                    ? Text(gym.city!,
+                    ? Text(
+                        gym.city!,
                         style: const TextStyle(
-                            color: AppTheme.muted, fontSize: 13))
+                          color: AppTheme.muted,
+                          fontSize: 13,
+                        ),
+                      )
                     : null,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -540,8 +578,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     if (!gym.isSystem)
                       IconButton(
-                        icon: const Icon(Icons.delete,
-                            size: 20, color: AppTheme.error),
+                        icon: const Icon(
+                          Icons.delete,
+                          size: 20,
+                          color: AppTheme.error,
+                        ),
                         onPressed: () => _deleteGym(gym),
                       ),
                   ],

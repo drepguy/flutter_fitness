@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
+
 import '../database/app_database.dart';
 
 class ImportService {
@@ -11,7 +13,9 @@ class ImportService {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
 
     if (data['version'] != 1) {
-      throw Exception('Unbekanntes Export-Format (Version: ${data['version']})');
+      throw Exception(
+        'Unbekanntes Export-Format (Version: ${data['version']})',
+      );
     }
 
     int imported = 0;
@@ -29,12 +33,16 @@ class ImportService {
       if (existingId != null) {
         gymIdMap[g['id'] as int] = existingId;
       } else {
-        final newId = await db.into(db.gyms).insert(GymsCompanion.insert(
-          name: name,
-          city: Value(g['city'] as String?),
-          isSystem: Value(g['isSystem'] as bool? ?? false),
-          createdAt: DateTime.parse(g['createdAt'] as String),
-        ));
+        final newId = await db
+            .into(db.gyms)
+            .insert(
+              GymsCompanion.insert(
+                name: name,
+                city: Value(g['city'] as String?),
+                isSystem: Value(g['isSystem'] as bool? ?? false),
+                createdAt: DateTime.parse(g['createdAt'] as String),
+              ),
+            );
         gymIdMap[g['id'] as int] = newId;
         gymNameMap[name.toLowerCase()] = newId;
         imported++;
@@ -53,21 +61,28 @@ class ImportService {
       final existingId = exNameMap[name.toLowerCase()];
       if (existingId != null) {
         exerciseIdMap[e['id'] as int] = existingId;
-        await (db.update(db.exercises)..where((t) => t.id.equals(existingId)))
-            .write(ExercisesCompanion(
-          iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
-          category: Value(e['category'] as String? ?? 'Sonstiges'),
-          kind: Value(e['kind'] as String? ?? 'free_weight'),
-        ));
+        await (db.update(
+          db.exercises,
+        )..where((t) => t.id.equals(existingId))).write(
+          ExercisesCompanion(
+            iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
+            category: Value(e['category'] as String? ?? 'Sonstiges'),
+            kind: Value(e['kind'] as String? ?? 'free_weight'),
+          ),
+        );
       } else {
-        final newId = await db.into(db.exercises).insert(ExercisesCompanion.insert(
-          name: name,
-          category: Value(e['category'] as String? ?? 'Sonstiges'),
-          kind: Value(e['kind'] as String? ?? 'free_weight'),
-          iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
-          isSystem: Value(e['isSystem'] as bool? ?? false),
-          createdAt: DateTime.parse(e['createdAt'] as String),
-        ));
+        final newId = await db
+            .into(db.exercises)
+            .insert(
+              ExercisesCompanion.insert(
+                name: name,
+                category: Value(e['category'] as String? ?? 'Sonstiges'),
+                kind: Value(e['kind'] as String? ?? 'free_weight'),
+                iconKey: Value(e['iconKey'] as String? ?? 'dumbbell'),
+                isSystem: Value(e['isSystem'] as bool? ?? false),
+                createdAt: DateTime.parse(e['createdAt'] as String),
+              ),
+            );
         exerciseIdMap[e['id'] as int] = newId;
         exNameMap[name.toLowerCase()] = newId;
         imported++;
@@ -85,13 +100,17 @@ class ImportService {
       final exId = exerciseIdMap[a['exerciseId'] as int];
       if (exId == null) continue;
       final alias = a['alias'] as String;
-    final key = '${exId}_${alias.toLowerCase()}';
+      final key = '${exId}_${alias.toLowerCase()}';
       if (aliasKeyMap.containsKey(key)) continue;
-      final newId = await db.into(db.exerciseAliases).insert(ExerciseAliasesCompanion.insert(
-        exerciseId: exId,
-        alias: alias,
-        createdAt: DateTime.parse(a['createdAt'] as String),
-      ));
+      final newId = await db
+          .into(db.exerciseAliases)
+          .insert(
+            ExerciseAliasesCompanion.insert(
+              exerciseId: exId,
+              alias: alias,
+              createdAt: DateTime.parse(a['createdAt'] as String),
+            ),
+          );
       aliasIdMap[a['id'] as int] = newId;
       aliasKeyMap[key] = newId;
       imported++;
@@ -108,18 +127,26 @@ class ImportService {
     for (final w in (data['workouts'] as List? ?? [])) {
       final startedAt = DateTime.parse(w['startedAt'] as String);
       final gymId = w['gymId'] != null ? gymIdMap[w['gymId'] as int] : null;
-      final key = '${startedAt.toIso8601String()}_${gymId}';
+      final key = '${startedAt.toIso8601String()}_$gymId';
       final existingId = workoutKeyMap[key];
       if (existingId != null) {
         workoutIdMap[w['id'] as int] = existingId;
       } else {
-        final newId = await db.into(db.workouts).insert(WorkoutsCompanion.insert(
-          gymId: Value(gymId),
-          startedAt: startedAt,
-          endedAt: w['endedAt'] != null ? Value(DateTime.parse(w['endedAt'] as String)) : const Value.absent(),
-          notes: w['notes'] != null ? Value(w['notes'] as String) : const Value.absent(),
-          createdAt: DateTime.parse(w['createdAt'] as String),
-        ));
+        final newId = await db
+            .into(db.workouts)
+            .insert(
+              WorkoutsCompanion.insert(
+                gymId: Value(gymId),
+                startedAt: startedAt,
+                endedAt: w['endedAt'] != null
+                    ? Value(DateTime.parse(w['endedAt'] as String))
+                    : const Value.absent(),
+                notes: w['notes'] != null
+                    ? Value(w['notes'] as String)
+                    : const Value.absent(),
+                createdAt: DateTime.parse(w['createdAt'] as String),
+              ),
+            );
         workoutIdMap[w['id'] as int] = newId;
         workoutKeyMap[key] = newId;
         imported++;
@@ -139,17 +166,23 @@ class ImportService {
       final exerciseId = exerciseIdMap[we['exerciseId'] as int];
       if (workoutId == null || exerciseId == null) continue;
       final orderIdx = we['orderIdx'] as int;
-      final key = '${workoutId}_${exerciseId}_${orderIdx}';
+      final key = '${workoutId}_${exerciseId}_$orderIdx';
       final existingId = weKeyMap[key];
       if (existingId != null) {
         weIdMap[we['id'] as int] = existingId;
       } else {
-        final newId = await db.into(db.workoutExercises).insert(WorkoutExercisesCompanion.insert(
-          workoutId: workoutId,
-          exerciseId: exerciseId,
-          orderIdx: orderIdx,
-          notes: we['notes'] != null ? Value(we['notes'] as String) : const Value.absent(),
-        ));
+        final newId = await db
+            .into(db.workoutExercises)
+            .insert(
+              WorkoutExercisesCompanion.insert(
+                workoutId: workoutId,
+                exerciseId: exerciseId,
+                orderIdx: orderIdx,
+                notes: we['notes'] != null
+                    ? Value(we['notes'] as String)
+                    : const Value.absent(),
+              ),
+            );
         weIdMap[we['id'] as int] = newId;
         weKeyMap[key] = newId;
         imported++;
@@ -168,22 +201,30 @@ class ImportService {
       final weId = weIdMap[s['workoutExerciseId'] as int];
       if (weId == null) continue;
       final setNo = s['setNo'] as int;
-      final key = '${weId}_${setNo}';
+      final key = '${weId}_$setNo';
       final existingId = setKeyMap[key];
       if (existingId != null) {
         setIdMap[s['id'] as int] = existingId;
       } else {
-        final newId = await db.into(db.workoutSets).insert(WorkoutSetsCompanion.insert(
-          workoutExerciseId: weId,
-          setNo: setNo,
-          reps: s['reps'] as int,
-          weightKg: (s['weightKg'] as num).toDouble(),
-          isWarmup: Value(s['isWarmup'] as bool? ?? false),
-          rpe: s['rpe'] != null ? Value(s['rpe'] as int) : const Value.absent(),
-          isFailure: Value(s['isFailure'] as bool? ?? false),
-          note: s['note'] != null ? Value(s['note'] as String) : const Value.absent(),
-          createdAt: DateTime.parse(s['createdAt'] as String),
-        ));
+        final newId = await db
+            .into(db.workoutSets)
+            .insert(
+              WorkoutSetsCompanion.insert(
+                workoutExerciseId: weId,
+                setNo: setNo,
+                reps: s['reps'] as int,
+                weightKg: (s['weightKg'] as num).toDouble(),
+                isWarmup: Value(s['isWarmup'] as bool? ?? false),
+                rpe: s['rpe'] != null
+                    ? Value(s['rpe'] as int)
+                    : const Value.absent(),
+                isFailure: Value(s['isFailure'] as bool? ?? false),
+                note: s['note'] != null
+                    ? Value(s['note'] as String)
+                    : const Value.absent(),
+                createdAt: DateTime.parse(s['createdAt'] as String),
+              ),
+            );
         setIdMap[s['id'] as int] = newId;
         setKeyMap[key] = newId;
         imported++;
@@ -207,12 +248,16 @@ class ImportService {
       if (existingId != null) {
         templateIdMap[t['id'] as int] = existingId;
       } else {
-        final newId = await db.into(db.workoutTemplates).insert(WorkoutTemplatesCompanion.insert(
-          gymId: gymId,
-          name: name,
-          createdAt: DateTime.parse(t['createdAt'] as String),
-          updatedAt: DateTime.parse(t['updatedAt'] as String),
-        ));
+        final newId = await db
+            .into(db.workoutTemplates)
+            .insert(
+              WorkoutTemplatesCompanion.insert(
+                gymId: gymId,
+                name: name,
+                createdAt: DateTime.parse(t['createdAt'] as String),
+                updatedAt: DateTime.parse(t['updatedAt'] as String),
+              ),
+            );
         templateIdMap[t['id'] as int] = newId;
         templateKeyMap[key] = newId;
         imported++;
@@ -230,13 +275,17 @@ class ImportService {
       final exerciseId = exerciseIdMap[te['exerciseId'] as int];
       if (templateId == null || exerciseId == null) continue;
       final orderIdx = te['orderIdx'] as int;
-      final key = '${templateId}_${exerciseId}_${orderIdx}';
+      final key = '${templateId}_${exerciseId}_$orderIdx';
       if (teKeyMap.containsKey(key)) continue;
-      await db.into(db.workoutTemplateExercises).insert(WorkoutTemplateExercisesCompanion.insert(
-        templateId: templateId,
-        exerciseId: exerciseId,
-        orderIdx: orderIdx,
-      ));
+      await db
+          .into(db.workoutTemplateExercises)
+          .insert(
+            WorkoutTemplateExercisesCompanion.insert(
+              templateId: templateId,
+              exerciseId: exerciseId,
+              orderIdx: orderIdx,
+            ),
+          );
       teKeyMap[key] = true;
       imported++;
     }

@@ -30,9 +30,7 @@ class _FinishDialogState extends State<FinishDialog> {
           TextField(
             controller: _notesController,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Notizen (optional)',
-            ),
+            decoration: const InputDecoration(labelText: 'Notizen (optional)'),
           ),
         ],
       ),
@@ -43,7 +41,9 @@ class _FinishDialogState extends State<FinishDialog> {
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, {
-            'notes': _notesController.text.isEmpty ? null : _notesController.text,
+            'notes': _notesController.text.isEmpty
+                ? null
+                : _notesController.text,
           }),
           child: const Text('Speichern & Beenden'),
         ),

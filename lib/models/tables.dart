@@ -20,17 +20,21 @@ class Exercises extends Table {
 
 class ExerciseAliases extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get exerciseId => integer().references(Exercises, #id, onDelete: KeyAction.cascade)();
+  IntColumn get exerciseId =>
+      integer().references(Exercises, #id, onDelete: KeyAction.cascade)();
   TextColumn get alias => text().withLength(min: 1, max: 120)();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
-  List<Set<Column>> get uniqueKeys => [{alias, exerciseId}];
+  List<Set<Column>> get uniqueKeys => [
+    {alias, exerciseId},
+  ];
 }
 
 class Workouts extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get gymId => integer().references(Gyms, #id, onDelete: KeyAction.setNull).nullable()();
+  IntColumn get gymId =>
+      integer().references(Gyms, #id, onDelete: KeyAction.setNull).nullable()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get endedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
@@ -42,7 +46,8 @@ class Workouts extends Table {
 
 class WorkoutExercises extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get workoutId => integer().references(Workouts, #id, onDelete: KeyAction.cascade)();
+  IntColumn get workoutId =>
+      integer().references(Workouts, #id, onDelete: KeyAction.cascade)();
   IntColumn get exerciseId => integer().references(Exercises, #id)();
   IntColumn get orderIdx => integer()();
   TextColumn get notes => text().nullable()();
@@ -50,7 +55,11 @@ class WorkoutExercises extends Table {
 
 class WorkoutSets extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get workoutExerciseId => integer().references(WorkoutExercises, #id, onDelete: KeyAction.cascade)();
+  IntColumn get workoutExerciseId => integer().references(
+    WorkoutExercises,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
   IntColumn get setNo => integer()();
   IntColumn get reps => integer()();
   RealColumn get weightKg => real()();
@@ -69,12 +78,18 @@ class WorkoutTemplates extends Table {
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
-  List<Set<Column>> get uniqueKeys => [{gymId, name}];
+  List<Set<Column>> get uniqueKeys => [
+    {gymId, name},
+  ];
 }
 
 class WorkoutTemplateExercises extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get templateId => integer().references(WorkoutTemplates, #id, onDelete: KeyAction.cascade)();
+  IntColumn get templateId => integer().references(
+    WorkoutTemplates,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
   IntColumn get exerciseId => integer().references(Exercises, #id)();
   IntColumn get orderIdx => integer()();
 }

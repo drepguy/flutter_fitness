@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
@@ -10,11 +11,7 @@ class ExerciseEditDialog extends StatefulWidget {
   final AppDatabase db;
   final Exercise? exercise;
 
-  const ExerciseEditDialog({
-    super.key,
-    required this.db,
-    this.exercise,
-  });
+  const ExerciseEditDialog({super.key, required this.db, this.exercise});
 
   @override
   State<ExerciseEditDialog> createState() => _ExerciseEditDialogState();
@@ -42,9 +39,9 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
   }
 
   Future<void> _loadAliases() async {
-    final aliases = await (widget.db.select(widget.db.exerciseAliases)
-          ..where((a) => a.exerciseId.equals(widget.exercise!.id)))
-        .get();
+    final aliases = await (widget.db.select(
+      widget.db.exerciseAliases,
+    )..where((a) => a.exerciseId.equals(widget.exercise!.id))).get();
     _aliasController.text = aliases.map((a) => a.alias).join(', ');
   }
 
@@ -53,17 +50,21 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
 
     final now = DateTime.now();
     if (widget.exercise != null) {
-      await (widget.db.update(widget.db.exercises)
-            ..where((e) => e.id.equals(widget.exercise!.id)))
-          .write(ExercisesCompanion(
-        name: Value(_nameController.text.trim()),
-        category: Value(_category),
-        kind: Value(_kind),
-        iconKey: Value(_iconKey),
-      ));
+      await (widget.db.update(
+        widget.db.exercises,
+      )..where((e) => e.id.equals(widget.exercise!.id))).write(
+        ExercisesCompanion(
+          name: Value(_nameController.text.trim()),
+          category: Value(_category),
+          kind: Value(_kind),
+          iconKey: Value(_iconKey),
+        ),
+      );
       await _syncAliases(widget.exercise!.id);
     } else {
-      final id = await widget.db.into(widget.db.exercises).insert(
+      final id = await widget.db
+          .into(widget.db.exercises)
+          .insert(
             ExercisesCompanion.insert(
               name: _nameController.text.trim(),
               category: Value(_category),
@@ -85,15 +86,17 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    final existing = await (widget.db.select(widget.db.exerciseAliases)
-          ..where((a) => a.exerciseId.equals(exerciseId)))
-        .get();
+    final existing = await (widget.db.select(
+      widget.db.exerciseAliases,
+    )..where((a) => a.exerciseId.equals(exerciseId))).get();
 
     final existingStrings = existing.map((a) => a.alias).toSet();
 
     for (final alias in newAliases) {
       if (!existingStrings.contains(alias)) {
-        await widget.db.into(widget.db.exerciseAliases).insert(
+        await widget.db
+            .into(widget.db.exerciseAliases)
+            .insert(
               ExerciseAliasesCompanion.insert(
                 exerciseId: exerciseId,
                 alias: alias,
@@ -105,9 +108,9 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
 
     for (final old in existing) {
       if (!newAliases.contains(old.alias)) {
-        await (widget.db.delete(widget.db.exerciseAliases)
-              ..where((a) => a.id.equals(old.id)))
-            .go();
+        await (widget.db.delete(
+          widget.db.exerciseAliases,
+        )..where((a) => a.id.equals(old.id))).go();
       }
     }
   }
@@ -135,7 +138,10 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
                 setState(() {
                   _category = v!;
                   if (!_iconManuallySet && _nameController.text.isNotEmpty) {
-                    _iconKey = autoAssignIconKey(_nameController.text, _category);
+                    _iconKey = autoAssignIconKey(
+                      _nameController.text,
+                      _category,
+                    );
                   }
                 });
               },
@@ -145,7 +151,9 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
               initialValue: _kind,
               decoration: const InputDecoration(labelText: 'Art'),
               items: exerciseKindLabels.entries
-                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _kind = v!),
             ),
@@ -164,7 +172,10 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
                 decoration: const InputDecoration(labelText: 'Icon'),
                 child: Row(
                   children: [
-                    _CurrentIcon(iconKey: _iconKey, exerciseName: _nameController.text),
+                    _CurrentIcon(
+                      iconKey: _iconKey,
+                      exerciseName: _nameController.text,
+                    ),
                     const Spacer(),
                     const Icon(Icons.chevron_right, color: AppTheme.muted),
                   ],
@@ -186,10 +197,7 @@ class _ExerciseEditDialogState extends State<ExerciseEditDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Abbrechen'),
         ),
-        ElevatedButton(
-          onPressed: _save,
-          child: const Text('Speichern'),
-        ),
+        ElevatedButton(onPressed: _save, child: const Text('Speichern')),
       ],
     );
   }
@@ -203,7 +211,9 @@ class _CurrentIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = getIconAsset(iconKey) ?? (exerciseName != null ? getExerciseImage(exerciseName!) : null);
+    final imagePath =
+        getIconAsset(iconKey) ??
+        (exerciseName != null ? getExerciseImage(exerciseName!) : null);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),
@@ -212,7 +222,7 @@ class _CurrentIcon extends StatelessWidget {
           width: 28,
           height: 28,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Icon(
+          errorBuilder: (_, _, _) => Icon(
             iconData[iconKey] ?? Icons.fitness_center,
             size: 24,
             color: AppTheme.primary,

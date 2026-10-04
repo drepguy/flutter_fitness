@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
-import '../utils/constants.dart';
 import '../utils/exercise_assets.dart';
 
 class IconPickerDialog extends StatefulWidget {
@@ -58,7 +58,14 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
             if (_options == null)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else if (filtered.isEmpty)
-              const Expanded(child: Center(child: Text('Keine Ergebnisse', style: TextStyle(color: AppTheme.muted))))
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'Keine Ergebnisse',
+                    style: TextStyle(color: AppTheme.muted),
+                  ),
+                ),
+              )
             else
               Expanded(
                 child: GridView.builder(
@@ -76,10 +83,14 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                       onTap: () => Navigator.pop(context, option.key),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceVariant,
+                          color: isSelected
+                              ? AppTheme.primary.withValues(alpha: 0.2)
+                              : AppTheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? AppTheme.primary : Colors.transparent,
+                            color: isSelected
+                                ? AppTheme.primary
+                                : Colors.transparent,
                             width: 2,
                           ),
                         ),
@@ -94,7 +105,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                                   width: 72,
                                   height: 72,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
+                                  errorBuilder: (_, _, _) => const Icon(
                                     Icons.fitness_center,
                                     color: AppTheme.primary,
                                     size: 56,
@@ -110,7 +121,10 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                             const SizedBox(height: 4),
                             Text(
                               option.label,
-                              style: const TextStyle(fontSize: 9, color: AppTheme.muted),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: AppTheme.muted,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,

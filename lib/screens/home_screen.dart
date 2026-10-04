@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -60,15 +62,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final count = await service.importJson(content);
       _loadData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$count Datensätze importiert')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$count Datensätze importiert')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Fehler: $e')));
       }
     }
   }
@@ -81,9 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bytes: await file.readAsBytes(),
     );
     if (uri != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gespeichert: ${uri.path}')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gespeichert: ${uri.path}')));
     }
   }
 
@@ -97,10 +97,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     final gyms = await widget.db.select(widget.db.gyms).get();
-    final workouts = await (widget.db.select(widget.db.workouts)
-          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
-          ..limit(20))
-        .get();
+    final workouts =
+        await (widget.db.select(widget.db.workouts)
+              ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
+              ..limit(20))
+            .get();
 
     final gymNames = <int, String>{};
     for (final g in gyms) {
@@ -146,15 +147,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (_selectedIds.length == _recentWorkouts.length) {
                     _selectedIds.clear();
                   } else {
-                    _selectedIds.addAll(
-                        _recentWorkouts.map((w) => w.id));
+                    _selectedIds.addAll(_recentWorkouts.map((w) => w.id));
                   }
                 });
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete,
-                  color: AppTheme.error),
+              icon: const Icon(Icons.delete, color: AppTheme.error),
               onPressed: _selectedIds.isEmpty
                   ? null
                   : () => _deleteSelectedWorkouts(),
@@ -218,17 +217,28 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: AppTheme.primary.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.fitness_center,
-                                size: 32, color: AppTheme.primary),
+                            child: const Icon(
+                              Icons.fitness_center,
+                              size: 32,
+                              color: AppTheme.primary,
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          const Text('Erstelle dein erstes Studio',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                          const Text(
+                            'Erstelle dein erstes Studio',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text('Tippe hier um loszulegen',
-                              style: TextStyle(
-                                  color: AppTheme.muted, fontSize: 13)),
+                          Text(
+                            'Tippe hier um loszulegen',
+                            style: TextStyle(
+                              color: AppTheme.muted,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -237,15 +247,19 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             else
               for (final gym in _gyms) ...[
-                SlideInCard(index: _gyms.indexOf(gym), child: _buildGymCard(gym)),
+                SlideInCard(
+                  index: _gyms.indexOf(gym),
+                  child: _buildGymCard(gym),
+                ),
               ],
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: Text('Letzte Trainings',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      )),
+              child: Text(
+                'Letzte Trainings',
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 8),
             if (_recentWorkouts.isEmpty)
@@ -256,16 +270,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.bar_chart,
-                            size: 36, color: AppTheme.muted),
+                        Icon(Icons.bar_chart, size: 36, color: AppTheme.muted),
                         const SizedBox(height: 12),
-                        const Text('Noch keine Trainings',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15)),
+                        const Text(
+                          'Noch keine Trainings',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Starte dein erstes Training',
-                            style: TextStyle(
-                                color: AppTheme.muted, fontSize: 13)),
+                        Text(
+                          'Starte dein erstes Training',
+                          style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                        ),
                       ],
                     ),
                   ),
@@ -274,8 +292,9 @@ class _HomeScreenState extends State<HomeScreen> {
             else
               for (final w in _recentWorkouts) ...[
                 SlideInCard(
-                    index: _gyms.length + _recentWorkouts.indexOf(w),
-                    child: _buildWorkoutCard(w)),
+                  index: _gyms.length + _recentWorkouts.indexOf(w),
+                  child: _buildWorkoutCard(w),
+                ),
               ],
           ],
         ),
@@ -315,13 +334,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(gym.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      gym.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     if (gym.city != null)
-                      Text(gym.city!,
-                          style: const TextStyle(
-                              color: AppTheme.muted, fontSize: 13)),
+                      Text(
+                        gym.city!,
+                        style: const TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 13,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -361,9 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
             });
             return;
           }
-          final gym = await (widget.db.select(widget.db.gyms)
-                ..where((g) => g.id.equals(workout.gymId!)))
-              .getSingle();
+          final gym = await (widget.db.select(
+            widget.db.gyms,
+          )..where((g) => g.id.equals(workout.gymId!))).getSingle();
+          if (!mounted) return;
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -401,8 +429,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive
                           ? AppTheme.secondary.withValues(alpha: 0.2)
@@ -423,41 +453,56 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text(formatDateTime(workout.startedAt),
-                      style: const TextStyle(
-                          color: AppTheme.muted, fontSize: 13)),
+                  Text(
+                    formatDateTime(workout.startedAt),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 13),
+                  ),
                   if (!isActive && workout.endedAt != null) ...[
                     const Text(' · ', style: TextStyle(color: AppTheme.muted)),
                     Text(
-                        formatDuration(
-                            workout.endedAt!.difference(workout.startedAt)),
-                        style: const TextStyle(
-                            color: AppTheme.muted, fontSize: 13)),
+                      formatDuration(
+                        workout.endedAt!.difference(workout.startedAt),
+                      ),
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ],
               ),
               if (workout.notes != null && workout.notes!.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(workout.notes!,
-                    style: const TextStyle(color: AppTheme.muted, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  workout.notes!,
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
               if (!isActive) ...[
                 const SizedBox(height: 8),
-                Builder(builder: (context) {
-                  final stats = _workoutStats[workout.id];
-                  if (stats == null) return const SizedBox();
-                  final exerciseCount = stats['exerciseCount'] as int;
-                  final volume = stats['totalVolume'] as double;
-                  return Row(
-                    children: [
-                      _buildStatChip(Icons.fitness_center, '$exerciseCount Übungen'),
-                      const SizedBox(width: 8),
-                      _buildStatChip(Icons.scale, '${formatVolume(volume)} kg'),
-                    ],
-                  );
-                }),
+                Builder(
+                  builder: (context) {
+                    final stats = _workoutStats[workout.id];
+                    if (stats == null) return const SizedBox();
+                    final exerciseCount = stats['exerciseCount'] as int;
+                    final volume = stats['totalVolume'] as double;
+                    return Row(
+                      children: [
+                        _buildStatChip(
+                          Icons.fitness_center,
+                          '$exerciseCount Übungen',
+                        ),
+                        const SizedBox(width: 8),
+                        _buildStatChip(
+                          Icons.scale,
+                          '${formatVolume(volume)} kg',
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ],
           ),
@@ -478,23 +523,25 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Icon(icon, size: 14, color: AppTheme.muted),
           const SizedBox(width: 4),
-          Text(text,
-              style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+          Text(
+            text,
+            style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+          ),
         ],
       ),
     );
   }
 
   Future<Map<String, dynamic>> _getWorkoutStats(int workoutId) async {
-    final exercises = await (widget.db.select(widget.db.workoutExercises)
-          ..where((we) => we.workoutId.equals(workoutId)))
-        .get();
+    final exercises = await (widget.db.select(
+      widget.db.workoutExercises,
+    )..where((we) => we.workoutId.equals(workoutId))).get();
 
     int totalVolume = 0;
     for (final we in exercises) {
-      final sets = await (widget.db.select(widget.db.workoutSets)
-            ..where((s) => s.workoutExerciseId.equals(we.id)))
-          .get();
+      final sets = await (widget.db.select(
+        widget.db.workoutSets,
+      )..where((s) => s.workoutExerciseId.equals(we.id))).get();
       for (final set in sets) {
         totalVolume += (set.weightKg * set.reps).toInt();
       }
@@ -538,9 +585,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     for (final workout in toDelete) {
-      await (widget.db.delete(widget.db.workouts)
-            ..where((w) => w.id.equals(workout.id)))
-          .go();
+      await (widget.db.delete(
+        widget.db.workouts,
+      )..where((w) => w.id.equals(workout.id))).go();
     }
     _loadData();
   }

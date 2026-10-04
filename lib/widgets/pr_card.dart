@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
 class PRCard extends StatelessWidget {
@@ -19,9 +20,7 @@ class PRCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border(
-            left: BorderSide(color: AppTheme.gold, width: 3),
-          ),
+          border: Border(left: BorderSide(color: AppTheme.gold, width: 3)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -33,20 +32,29 @@ class PRCard extends StatelessWidget {
                   Icon(Icons.emoji_events, size: 16, color: AppTheme.gold),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(title,
-                        style: const TextStyle(
-                            color: AppTheme.muted, fontSize: 12)),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(value,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(date,
-                  style: const TextStyle(
-                      color: AppTheme.muted, fontSize: 11)),
+              Text(
+                date,
+                style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+              ),
             ],
           ),
         ),

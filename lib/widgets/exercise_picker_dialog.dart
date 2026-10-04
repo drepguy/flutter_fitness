@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
@@ -32,14 +33,16 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
   Future<void> _loadExercises() async {
     final query = widget.db.select(widget.db.exercises).join([
       leftOuterJoin(
-          widget.db.exerciseAliases,
-          widget.db.exerciseAliases.exerciseId
-              .equalsExp(widget.db.exercises.id)),
+        widget.db.exerciseAliases,
+        widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id),
+      ),
     ]);
 
     if (_search.isNotEmpty) {
-      query.where(widget.db.exercises.name.like('%$_search%') |
-          widget.db.exerciseAliases.alias.like('%$_search%'));
+      query.where(
+        widget.db.exercises.name.like('%$_search%') |
+            widget.db.exerciseAliases.alias.like('%$_search%'),
+      );
     }
 
     final results = await query.get();
@@ -54,8 +57,11 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
       }
     }
 
-    setState(() => _exercises = map.values.toList()
-      ..sort((a, b) => a.exercise.name.compareTo(b.exercise.name)));
+    setState(
+      () =>
+          _exercises = map.values.toList()
+            ..sort((a, b) => a.exercise.name.compareTo(b.exercise.name)),
+    );
   }
 
   @override
@@ -71,14 +77,20 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
           children: [
             if (suggested != null && _search.isEmpty) ...[
               ListTile(
-                leading: const Icon(Icons.auto_awesome,
-                    color: AppTheme.primary, size: 20),
+                leading: const Icon(
+                  Icons.auto_awesome,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
                 title: Text(suggested.name),
-                subtitle: Text('Empfohlen',
-                    style: TextStyle(color: AppTheme.primary, fontSize: 12)),
+                subtitle: Text(
+                  'Empfohlen',
+                  style: TextStyle(color: AppTheme.primary, fontSize: 12),
+                ),
                 tileColor: AppTheme.primaryContainer.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 onTap: () => Navigator.pop(context, suggested),
               ),
               const SizedBox(height: 4),
@@ -104,11 +116,16 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
                   return ListTile(
                     leading: _buildExerciseIcon(e.exercise),
                     title: Text(e.exercise.name),
-                    subtitle: Text(e.exercise.category,
-                        style: const TextStyle(
-                            color: AppTheme.muted, fontSize: 12)),
-                    tileColor:
-                        isSuggested ? AppTheme.primaryContainer.withValues(alpha: 0.3) : null,
+                    subtitle: Text(
+                      e.exercise.category,
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    tileColor: isSuggested
+                        ? AppTheme.primaryContainer.withValues(alpha: 0.3)
+                        : null,
                     onTap: () => Navigator.pop(context, e.exercise),
                   );
                 },
@@ -121,7 +138,8 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
   }
 
   Widget _buildExerciseIcon(Exercise exercise) {
-    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    final imagePath =
+        getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -130,7 +148,7 @@ class _ExercisePickerDialogState extends State<ExercisePickerDialog> {
           width: 40,
           height: 40,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackIcon(exercise),
+          errorBuilder: (_, _, _) => _buildFallbackIcon(exercise),
         ),
       );
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+
 import '../database/app_database.dart';
 
 class GymEditDialog extends StatefulWidget {
@@ -29,17 +30,27 @@ class _GymEditDialogState extends State<GymEditDialog> {
     if (_nameController.text.trim().isEmpty) return;
 
     if (widget.gym != null) {
-      await (widget.db.update(widget.db.gyms)
-            ..where((g) => g.id.equals(widget.gym!.id)))
-          .write(GymsCompanion(
-        name: Value(_nameController.text.trim()),
-        city: Value(_cityController.text.isEmpty ? null : _cityController.text.trim()),
-      ));
+      await (widget.db.update(
+        widget.db.gyms,
+      )..where((g) => g.id.equals(widget.gym!.id))).write(
+        GymsCompanion(
+          name: Value(_nameController.text.trim()),
+          city: Value(
+            _cityController.text.isEmpty ? null : _cityController.text.trim(),
+          ),
+        ),
+      );
     } else {
-      await widget.db.into(widget.db.gyms).insert(
+      await widget.db
+          .into(widget.db.gyms)
+          .insert(
             GymsCompanion.insert(
               name: _nameController.text.trim(),
-              city: Value(_cityController.text.isEmpty ? null : _cityController.text.trim()),
+              city: Value(
+                _cityController.text.isEmpty
+                    ? null
+                    : _cityController.text.trim(),
+              ),
               createdAt: DateTime.now(),
             ),
           );
@@ -71,10 +82,7 @@ class _GymEditDialogState extends State<GymEditDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Abbrechen'),
         ),
-        ElevatedButton(
-          onPressed: _save,
-          child: const Text('Speichern'),
-        ),
+        ElevatedButton(onPressed: _save, child: const Text('Speichern')),
       ],
     );
   }

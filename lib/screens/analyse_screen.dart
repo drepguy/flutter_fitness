@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
@@ -37,38 +38,48 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
     setState(() => _gyms = gyms);
   }
 
-  DateTime get _fromDate => DateTime.now().subtract(Duration(days: _daysFilter));
+  DateTime get _fromDate =>
+      DateTime.now().subtract(Duration(days: _daysFilter));
 
   Future<List<Map<String, dynamic>>> _getExerciseData() async {
     if (_selectedExercise == null) return [];
 
-    final workouts = await (widget.db.select(widget.db.workouts)
-          ..where((w) =>
-              w.endedAt.isNotNull() &
-              w.startedAt.isBiggerOrEqualValue(_fromDate) &
-              (_selectedGymId != null
-                  ? w.gymId.equals(_selectedGymId!)
-                  : const Constant(true)))
-        ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
-        .get();
+    final workouts =
+        await (widget.db.select(widget.db.workouts)
+              ..where(
+                (w) =>
+                    w.endedAt.isNotNull() &
+                    w.startedAt.isBiggerOrEqualValue(_fromDate) &
+                    (_selectedGymId != null
+                        ? w.gymId.equals(_selectedGymId!)
+                        : const Constant(true)),
+              )
+              ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
+            .get();
 
     final data = <Map<String, dynamic>>[];
     for (final w in workouts) {
-      final we = await (widget.db.select(widget.db.workoutExercises)
-            ..where((e) =>
-                e.workoutId.equals(w.id) &
-                e.exerciseId.equals(_selectedExercise!.id))
-          ..limit(1))
-          .getSingleOrNull();
+      final we =
+          await (widget.db.select(widget.db.workoutExercises)
+                ..where(
+                  (e) =>
+                      e.workoutId.equals(w.id) &
+                      e.exerciseId.equals(_selectedExercise!.id),
+                )
+                ..limit(1))
+              .getSingleOrNull();
       if (we == null) continue;
 
-      final sets = await (widget.db.select(widget.db.workoutSets)
-            ..where((s) =>
-                s.workoutExerciseId.equals(we.id) &
-                s.isWarmup.equals(false) &
-                s.rpe.isBiggerOrEqualValue(7))
-          ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
-          .get();
+      final sets =
+          await (widget.db.select(widget.db.workoutSets)
+                ..where(
+                  (s) =>
+                      s.workoutExerciseId.equals(we.id) &
+                      s.isWarmup.equals(false) &
+                      s.rpe.isBiggerOrEqualValue(7),
+                )
+                ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
+              .get();
 
       if (sets.isEmpty) continue;
 
@@ -97,20 +108,29 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
       return {'maxWeight': 0, 'bestE1rm': 0, 'maxVolume': 0};
     }
 
-    final query = widget.db.select(widget.db.workoutSets).join([
-      innerJoin(widget.db.workoutExercises,
-          widget.db.workoutExercises.id.equalsExp(widget.db.workoutSets.workoutExerciseId)),
-      innerJoin(widget.db.workouts,
-          widget.db.workouts.id.equalsExp(widget.db.workoutExercises.workoutId)),
-    ])
-      ..where(
+    final query =
+        widget.db.select(widget.db.workoutSets).join([
+          innerJoin(
+            widget.db.workoutExercises,
+            widget.db.workoutExercises.id.equalsExp(
+              widget.db.workoutSets.workoutExerciseId,
+            ),
+          ),
+          innerJoin(
+            widget.db.workouts,
+            widget.db.workouts.id.equalsExp(
+              widget.db.workoutExercises.workoutId,
+            ),
+          ),
+        ])..where(
           widget.db.workoutExercises.exerciseId.equals(_selectedExercise!.id) &
-          widget.db.workoutSets.isWarmup.equals(false) &
-          widget.db.workoutSets.rpe.isBiggerOrEqualValue(7) &
-          widget.db.workouts.endedAt.isNotNull() &
-          (_selectedGymId != null
-              ? widget.db.workouts.gymId.equals(_selectedGymId!)
-              : const Constant(true)));
+              widget.db.workoutSets.isWarmup.equals(false) &
+              widget.db.workoutSets.rpe.isBiggerOrEqualValue(7) &
+              widget.db.workouts.endedAt.isNotNull() &
+              (_selectedGymId != null
+                  ? widget.db.workouts.gymId.equals(_selectedGymId!)
+                  : const Constant(true)),
+        );
 
     final results = await query.get();
 
@@ -152,15 +172,18 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
   }
 
   Future<Map<String, dynamic>> _getDashboardStats() async {
-    final workouts = await (widget.db.select(widget.db.workouts)
-          ..where((w) =>
-              w.endedAt.isNotNull() &
-              w.startedAt.isBiggerOrEqualValue(_fromDate) &
-              (_selectedGymId != null
-                  ? w.gymId.equals(_selectedGymId!)
-                  : const Constant(true)))
-        ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
-        .get();
+    final workouts =
+        await (widget.db.select(widget.db.workouts)
+              ..where(
+                (w) =>
+                    w.endedAt.isNotNull() &
+                    w.startedAt.isBiggerOrEqualValue(_fromDate) &
+                    (_selectedGymId != null
+                        ? w.gymId.equals(_selectedGymId!)
+                        : const Constant(true)),
+              )
+              ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
+            .get();
 
     if (workouts.isEmpty) {
       return {
@@ -178,15 +201,18 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
     final exerciseIds = <int>{};
 
     for (final w in workouts) {
-      final wes = await (widget.db.select(widget.db.workoutExercises)
-            ..where((we) => we.workoutId.equals(w.id)))
-          .get();
+      final wes = await (widget.db.select(
+        widget.db.workoutExercises,
+      )..where((we) => we.workoutId.equals(w.id))).get();
       for (final we in wes) {
         exerciseIds.add(we.exerciseId);
-        final sets = await (widget.db.select(widget.db.workoutSets)
-              ..where((s) =>
-                  s.workoutExerciseId.equals(we.id) & s.isWarmup.equals(false)))
-            .get();
+        final sets =
+            await (widget.db.select(widget.db.workoutSets)..where(
+                  (s) =>
+                      s.workoutExerciseId.equals(we.id) &
+                      s.isWarmup.equals(false),
+                ))
+                .get();
         setCount += sets.length;
         for (final s in sets) {
           totalVolume += calculateVolume(s.reps, s.weightKg);
@@ -211,30 +237,37 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
   }
 
   Future<List<Map<String, dynamic>>> _getMonthlyVolume() async {
-    final workouts = await (widget.db.select(widget.db.workouts)
-          ..where((w) =>
-              w.endedAt.isNotNull() &
-              w.startedAt.isBiggerOrEqualValue(_fromDate) &
-              (_selectedGymId != null
-                  ? w.gymId.equals(_selectedGymId!)
-                  : const Constant(true)))
-        ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
-        .get();
+    final workouts =
+        await (widget.db.select(widget.db.workouts)
+              ..where(
+                (w) =>
+                    w.endedAt.isNotNull() &
+                    w.startedAt.isBiggerOrEqualValue(_fromDate) &
+                    (_selectedGymId != null
+                        ? w.gymId.equals(_selectedGymId!)
+                        : const Constant(true)),
+              )
+              ..orderBy([(w) => OrderingTerm.asc(w.startedAt)]))
+            .get();
 
     final monthly = <String, Map<String, dynamic>>{};
 
     for (final w in workouts) {
-      final key = '${w.startedAt.year}-${w.startedAt.month.toString().padLeft(2, '0')}';
-      final wes = await (widget.db.select(widget.db.workoutExercises)
-            ..where((we) => we.workoutId.equals(w.id)))
-          .get();
+      final key =
+          '${w.startedAt.year}-${w.startedAt.month.toString().padLeft(2, '0')}';
+      final wes = await (widget.db.select(
+        widget.db.workoutExercises,
+      )..where((we) => we.workoutId.equals(w.id))).get();
 
       double vol = 0;
       for (final we in wes) {
-        final sets = await (widget.db.select(widget.db.workoutSets)
-              ..where((s) =>
-                  s.workoutExerciseId.equals(we.id) & s.isWarmup.equals(false)))
-            .get();
+        final sets =
+            await (widget.db.select(widget.db.workoutSets)..where(
+                  (s) =>
+                      s.workoutExerciseId.equals(we.id) &
+                      s.isWarmup.equals(false),
+                ))
+                .get();
         for (final s in sets) {
           vol += calculateVolume(s.reps, s.weightKg);
         }
@@ -247,14 +280,27 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
       };
     }
 
-    final maxVol = monthly.values
-        .fold<double>(0, (max, e) => (e['volume'] as double) > max ? e['volume'] as double : max);
+    final maxVol = monthly.values.fold<double>(
+      0,
+      (max, e) => (e['volume'] as double) > max ? e['volume'] as double : max,
+    );
 
     return monthly.entries.map((e) {
       final parts = e.key.split('-');
       final monthNames = [
-        '', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+        '',
+        'Jan',
+        'Feb',
+        'Mär',
+        'Apr',
+        'Mai',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Dez',
       ];
       return {
         'label': '${monthNames[int.parse(parts[1])]} ${parts[0].substring(2)}',
@@ -301,9 +347,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
             onPressed: () async {
               final ex = await showDialog<Exercise>(
                 context: context,
-                builder: (_) => ExercisePickerDialog(
-                  db: widget.db,
-                ),
+                builder: (_) => ExercisePickerDialog(db: widget.db),
               );
               if (ex != null) setState(() => _selectedExercise = ex);
             },
@@ -335,11 +379,14 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
               children: [
                 Icon(Icons.filter_alt, size: 14, color: AppTheme.primary),
                 const SizedBox(width: 6),
-                Text('RPE ≥ 7',
-                    style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  'RPE ≥ 7',
+                  style: TextStyle(
+                    color: AppTheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -358,25 +405,33 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_metric == 'e1rm' ? 'e1RM' : _metric == 'volume' ? 'Volumen' : 'Max Gewicht'} — ${_selectedExercise!.name}',
+                          '${_metric == 'e1rm'
+                              ? 'e1RM'
+                              : _metric == 'volume'
+                              ? 'Volumen'
+                              : 'Max Gewicht'} — ${_selectedExercise!.name}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           height: 200,
                           child: SimpleLineChart(
-                            data: data.map((d) => d[_metric] as double).toList(),
-                            labels: data
-                                .map((d) {
-                                  final dt = d['date'] as DateTime;
-                                  return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}';
-                                })
+                            data: data
+                                .map((d) => d[_metric] as double)
                                 .toList(),
+                            labels: data.map((d) {
+                              final dt = d['date'] as DateTime;
+                              return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}';
+                            }).toList(),
                           ),
                         ),
-                        Text('${data.length} Trainingspunkte',
-                            style: const TextStyle(
-                                color: AppTheme.muted, fontSize: 12)),
+                        Text(
+                          '${data.length} Trainingspunkte',
+                          style: const TextStyle(
+                            color: AppTheme.muted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -387,8 +442,10 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: const Text('Persönliche Rekorde',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: const Text(
+                'Persönliche Rekorde',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
             const SizedBox(height: 8),
             FutureBuilder<Map<String, dynamic>>(
@@ -435,8 +492,10 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: const Text('Dashboard',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text(
+              'Dashboard',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ),
           const SizedBox(height: 8),
           FutureBuilder<Map<String, dynamic>>(
@@ -449,46 +508,59 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                   Row(
                     children: [
                       Expanded(
-                          child: StatCard(
-                              title: 'Trainings',
-                              value: '${stats['workoutCount']}',
-                              icon: Icons.fitness_center)),
+                        child: StatCard(
+                          title: 'Trainings',
+                          value: '${stats['workoutCount']}',
+                          icon: Icons.fitness_center,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: StatCard(
-                              title: 'Sätze',
-                              value: '${stats['setCount']}',
-                              icon: Icons.replay)),
+                        child: StatCard(
+                          title: 'Sätze',
+                          value: '${stats['setCount']}',
+                          icon: Icons.replay,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: StatCard(
-                              title: 'Pro Woche',
-                              value: (stats['perWeek'] as double)
-                                  .toStringAsFixed(1),
-                              icon: Icons.calendar_today)),
+                        child: StatCard(
+                          title: 'Pro Woche',
+                          value: (stats['perWeek'] as double).toStringAsFixed(
+                            1,
+                          ),
+                          icon: Icons.calendar_today,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                          child: StatCard(
-                              title: 'Volumen',
-                              value:
-                                  '${formatVolume(stats['totalVolume'] as double)} kg',
-                              icon: Icons.scale)),
+                        child: StatCard(
+                          title: 'Volumen',
+                          value:
+                              '${formatVolume(stats['totalVolume'] as double)} kg',
+                          icon: Icons.scale,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: StatCard(
-                              title: 'Übungen',
-                              value: '${stats['exerciseCount']}',
-                              icon: Icons.list)),
+                        child: StatCard(
+                          title: 'Übungen',
+                          value: '${stats['exerciseCount']}',
+                          icon: Icons.list,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: StatCard(
-                              title: 'Zeitraum',
-                              value: '${stats['days']} Tage',
-                              icon: Icons.date_range)),
+                        child: StatCard(
+                          title: 'Zeitraum',
+                          value: '${stats['days']} Tage',
+                          icon: Icons.date_range,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -498,8 +570,10 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: const Text('Monatliches Volumen',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text(
+              'Monatliches Volumen',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ),
           const SizedBox(height: 8),
           FutureBuilder<List<Map<String, dynamic>>>(
@@ -520,8 +594,10 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                             children: [
                               SizedBox(
                                 width: 80,
-                                child: Text(m['label'] as String,
-                                    style: const TextStyle(fontSize: 13)),
+                                child: Text(
+                                  m['label'] as String,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
                               ),
                               Expanded(
                                 child: LinearProgressIndicator(
@@ -534,17 +610,22 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                               SizedBox(
                                 width: 80,
                                 child: Text(
-                                    '${formatVolume(m['volume'] as double)} kg',
-                                    style: const TextStyle(fontSize: 12),
-                                    textAlign: TextAlign.right),
+                                  '${formatVolume(m['volume'] as double)} kg',
+                                  style: const TextStyle(fontSize: 12),
+                                  textAlign: TextAlign.right,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               SizedBox(
                                 width: 30,
-                                child: Text('(${m['count']})',
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppTheme.muted),
-                                    textAlign: TextAlign.right),
+                                child: Text(
+                                  '(${m['count']})',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.muted,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
                               ),
                             ],
                           ),
@@ -578,7 +659,8 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
   }
 
   Widget _buildExerciseIcon(Exercise exercise) {
-    final imagePath = getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
+    final imagePath =
+        getIconAsset(exercise.iconKey) ?? getExerciseImage(exercise.name);
     if (imagePath != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),
@@ -587,7 +669,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
           width: 20,
           height: 20,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Icon(
+          errorBuilder: (_, _, _) => Icon(
             iconData[exercise.iconKey] ?? Icons.fitness_center,
             size: 18,
             color: AppTheme.primary,

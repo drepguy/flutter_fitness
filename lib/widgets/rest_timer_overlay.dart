@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
+
 import '../theme/app_theme.dart';
 
 class RestTimerOverlay extends StatefulWidget {
@@ -89,15 +90,9 @@ class _RestTimerOverlayState extends State<RestTimerOverlay> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (!_running)
-                ElevatedButton(
-                  onPressed: _start,
-                  child: const Text('Start'),
-                )
+                ElevatedButton(onPressed: _start, child: const Text('Start'))
               else
-                OutlinedButton(
-                  onPressed: _pause,
-                  child: const Text('Pause'),
-                ),
+                OutlinedButton(onPressed: _pause, child: const Text('Pause')),
               const SizedBox(width: 8),
               Wrap(
                 spacing: 6,

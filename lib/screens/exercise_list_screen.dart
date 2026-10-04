@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column, Index;
+
 import '../database/app_database.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
@@ -27,14 +28,17 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
 
   Future<void> _loadExercises() async {
     final query = widget.db.select(widget.db.exercises).join([
-      leftOuterJoin(widget.db.exerciseAliases,
-          widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id)),
+      leftOuterJoin(
+        widget.db.exerciseAliases,
+        widget.db.exerciseAliases.exerciseId.equalsExp(widget.db.exercises.id),
+      ),
     ]);
 
     if (_search.isNotEmpty) {
       query.where(
-          widget.db.exercises.name.like('%$_search%') |
-          widget.db.exerciseAliases.alias.like('%$_search%'));
+        widget.db.exercises.name.like('%$_search%') |
+            widget.db.exerciseAliases.alias.like('%$_search%'),
+      );
     }
 
     final results = await query.get();
@@ -43,14 +47,20 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       final ex = row.readTableOrNull(widget.db.exercises);
       final alias = row.readTableOrNull(widget.db.exerciseAliases);
       if (ex == null) continue;
-      map.putIfAbsent(ex.id, () => _ExerciseWithAliases(exercise: ex, aliases: []));
+      map.putIfAbsent(
+        ex.id,
+        () => _ExerciseWithAliases(exercise: ex, aliases: []),
+      );
       if (alias != null) {
         map[ex.id]!.aliases.add(alias);
       }
     }
 
-    setState(() => _exercises = map.values.toList()
-      ..sort((a, b) => a.exercise.name.compareTo(b.exercise.name)));
+    setState(
+      () =>
+          _exercises = map.values.toList()
+            ..sort((a, b) => a.exercise.name.compareTo(b.exercise.name)),
+    );
   }
 
   Future<void> _addExercise() async {
@@ -89,9 +99,9 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       ),
     );
     if (confirmed == true) {
-      await (widget.db.delete(widget.db.exercises)
-            ..where((e) => e.id.equals(ex.id)))
-          .go();
+      await (widget.db.delete(
+        widget.db.exercises,
+      )..where((e) => e.id.equals(ex.id))).go();
       _loadExercises();
     }
   }
@@ -137,28 +147,49 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                     borderRadius: BorderRadius.circular(12),
                     onTap: () => _editExercise(e.exercise),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       child: Row(
                         children: [
-                          _ExerciseThumbnail(exerciseName: e.exercise.name, iconKey: e.exercise.iconKey),
+                          _ExerciseThumbnail(
+                            exerciseName: e.exercise.name,
+                            iconKey: e.exercise.iconKey,
+                          ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(e.exercise.name, style: const TextStyle(fontSize: 16)),
-                                const SizedBox(height: 2),
-                                Text(e.exercise.category,
-                                    style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                                 Text(
-                                  exerciseKindLabels[e.exercise.kind] ?? e.exercise.kind,
-                                  style: const TextStyle(color: AppTheme.primary, fontSize: 12),
+                                  e.exercise.name,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  e.exercise.category,
+                                  style: const TextStyle(
+                                    color: AppTheme.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  exerciseKindLabels[e.exercise.kind] ??
+                                      e.exercise.kind,
+                                  style: const TextStyle(
+                                    color: AppTheme.primary,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 if (e.aliases.isNotEmpty)
                                   Text(
                                     'Aliases: ${e.aliases.map((a) => a.alias).join(', ')}',
-                                    style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                                    style: const TextStyle(
+                                      color: AppTheme.muted,
+                                      fontSize: 11,
+                                    ),
                                   ),
                               ],
                             ),
@@ -168,7 +199,11 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                             onPressed: () => _editExercise(e.exercise),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, size: 20, color: AppTheme.error),
+                            icon: const Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: AppTheme.error,
+                            ),
                             onPressed: () => _deleteExercise(e.exercise),
                           ),
                         ],
@@ -183,9 +218,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: AppTheme.surfaceContainerHigh,
-        ),
+        decoration: const BoxDecoration(color: AppTheme.surfaceContainerHigh),
         child: OutlinedButton.icon(
           onPressed: _addExercise,
           icon: const Icon(Icons.add),
@@ -220,7 +253,7 @@ class _ExerciseThumbnail extends StatelessWidget {
           width: 80,
           height: 80,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallback(),
+          errorBuilder: (_, _, _) => _buildFallback(),
         ),
       );
     }

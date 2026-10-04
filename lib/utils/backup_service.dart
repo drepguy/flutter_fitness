@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../database/app_database.dart';
 import 'export_service.dart';
 import 'import_service.dart';
@@ -46,7 +48,10 @@ class BackupService {
   Future<bool> backupExistsForToday() async {
     final dir = await _backupDir;
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final files = await dir.list().where((f) => f.path.contains(today)).toList();
+    final files = await dir
+        .list()
+        .where((f) => f.path.contains(today))
+        .toList();
     return files.isNotEmpty;
   }
 
@@ -72,12 +77,14 @@ class BackupService {
     for (final file in files) {
       final stat = await file.stat();
       final name = file.path.split(Platform.pathSeparator).last;
-      entries.add(BackupEntry(
-        file: file,
-        name: name,
-        size: stat.size,
-        modified: stat.modified,
-      ));
+      entries.add(
+        BackupEntry(
+          file: file,
+          name: name,
+          size: stat.size,
+          modified: stat.modified,
+        ),
+      );
     }
     return entries;
   }

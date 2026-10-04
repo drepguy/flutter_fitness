@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class SimpleLineChart extends StatefulWidget {
@@ -133,7 +134,9 @@ class _LineChartPainter extends CustomPainter {
       );
       textPainter.layout();
       textPainter.paint(
-          canvas, Offset(chartLeft - textPainter.width - 6, y - 6));
+        canvas,
+        Offset(chartLeft - textPainter.width - 6, y - 6),
+      );
     }
 
     if (data.length == 1) {
@@ -211,20 +214,40 @@ class _LineChartPainter extends CustomPainter {
       final dashTop = chartTop;
       final dashBottom = chartTop + chartH;
       for (double y = dashTop; y < dashBottom; y += 6) {
-        canvas.drawLine(Offset(p.dx, y), Offset(p.dx, min(y + 3, dashBottom)), dashPaint);
+        canvas.drawLine(
+          Offset(p.dx, y),
+          Offset(p.dx, min(y + 3, dashBottom)),
+          dashPaint,
+        );
       }
 
       // Tooltip
-      _drawTooltip(canvas, textPainter, p, labels[selectedIndex!], data[selectedIndex!]);
+      _drawTooltip(
+        canvas,
+        textPainter,
+        p,
+        labels[selectedIndex!],
+        data[selectedIndex!],
+      );
     }
   }
 
-  void _drawTooltip(Canvas canvas, TextPainter textPainter, Offset point, String label, double value) {
+  void _drawTooltip(
+    Canvas canvas,
+    TextPainter textPainter,
+    Offset point,
+    String label,
+    double value,
+  ) {
     final valueStr = value.toStringAsFixed(1);
     final tooltipText = '$label  $valueStr';
     textPainter.text = TextSpan(
       text: tooltipText,
-      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+      ),
     );
     textPainter.layout();
 
@@ -235,17 +258,22 @@ class _LineChartPainter extends CustomPainter {
 
     // Keep tooltip within chart bounds
     if (tooltipX < chartLeft) tooltipX = chartLeft;
-    if (tooltipX + tooltipW > chartLeft + chartW) tooltipX = chartLeft + chartW - tooltipW;
+    if (tooltipX + tooltipW > chartLeft + chartW) {
+      tooltipX = chartLeft + chartW - tooltipW;
+    }
 
     final tooltipRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(tooltipX, tooltipY, tooltipW, tooltipH),
       const Radius.circular(6),
     );
     canvas.drawRRect(tooltipRect, Paint()..color = const Color(0xFF28282F));
-    canvas.drawRRect(tooltipRect, Paint()
-      ..color = const Color(0xFFBB86FC).withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1);
+    canvas.drawRRect(
+      tooltipRect,
+      Paint()
+        ..color = const Color(0xFFBB86FC).withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
 
     textPainter.paint(canvas, Offset(tooltipX + 7, tooltipY + 5));
   }

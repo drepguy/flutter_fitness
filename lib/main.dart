@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column, Index;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'database/app_database.dart';
 import 'theme/app_theme.dart';
 import 'utils/backup_service.dart';
@@ -30,8 +31,9 @@ Future<void> _migrateExerciseIcons(AppDatabase db) async {
     if (ex.iconKey == 'dumbbell') {
       final newIconKey = autoAssignIconKey(ex.name, ex.category);
       if (newIconKey != 'dumbbell') {
-        await (db.update(db.exercises)..where((e) => e.id.equals(ex.id)))
-            .write(ExercisesCompanion(iconKey: Value(newIconKey)));
+        await (db.update(db.exercises)..where((e) => e.id.equals(ex.id))).write(
+          ExercisesCompanion(iconKey: Value(newIconKey)),
+        );
       }
     }
   }
@@ -64,9 +66,11 @@ class _MyAppState extends State<MyApp> {
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
       home: _showOnboarding
-          ? OnboardingScreen(onComplete: () {
-              setState(() => _showOnboarding = false);
-            })
+          ? OnboardingScreen(
+              onComplete: () {
+                setState(() => _showOnboarding = false);
+              },
+            )
           : MainScreen(db: widget.db),
     );
   }
@@ -83,7 +87,9 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  static const _channel = MethodChannel('com.example.flutter_fitness/rest_timer');
+  static const _channel = MethodChannel(
+    'com.example.flutter_fitness/rest_timer',
+  );
 
   late final List<Widget> _screens = [
     HomeScreen(db: widget.db),
