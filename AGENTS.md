@@ -301,7 +301,17 @@ Channel `com.example.flutter_fitness/rest_timer`:
   in that gym **that contains the exercise** — independent of exercise order
   or training day split (1st click → 1st set, …; past end → repeat last set).
   No cross-studio fallback; empty if never done in this studio.
-  Next-exercise suggestion ("Empfohlen") comes from `_predictNextExercise`.
+- Next-exercise suggestion ("Empfohlen", `_predictNextExercise`) is strictly
+  per-studio: every candidate comes from finished workouts in the *current*
+  gym only (exercise availability differs per gym). Empty session → opener of
+  the 2nd-last workout (alternating days); otherwise **majority vote** over
+  the immediate successors of the last-added exercise across history
+  ("what usually comes next", ties → newest workout; walks back through
+  today's exercises when one has no history yet), then day detection by
+  exercise overlap (containment, ties → newer workout) — inside the matched
+  workout continue after the anchor, else first not-yet-done — finally the
+  next not-yet-done exercise of the most recent workout. Pure selection
+  logic lives in `utils/suggestion_logic.dart`, unit-tested in `test/utils/`.
 - Templates store exercise list + `order_idx` ONLY — no default sets/reps/weight.
 - PRs are all-time within the studio filter (plus the `!warmup && rpe >= 7`
   and finished-workout conditions noted above); dashboard respects studio +

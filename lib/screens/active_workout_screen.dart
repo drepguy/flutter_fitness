@@ -12,6 +12,7 @@ import '../utils/formatters.dart';
 import '../utils/backup_service.dart';
 import '../utils/exercise_assets.dart';
 import '../utils/constants.dart';
+import '../utils/suggestion_logic.dart';
 import '../widgets/exercise_picker_dialog.dart';
 import '../widgets/finish_dialog.dart';
 
@@ -324,55 +325,136 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     _scrollToBottom();
   }
 
+  /// Suggests the "Empfohlen" exercise for the picker.
+  ///
+  /// Strictly scoped to [widget.gym]: candidates only ever come from
+  /// finished workouts in this studio, because exercises from other gyms
+  /// may not be available here. Order:
+  /// 1. Empty session → opener of the 2nd-last workout (alternating
+  ///    training days), falling back to the last one.
+  /// 2. **Usual successor** → what *most often* followed the last added
+  ///    exercise across this gym's finished workouts (majority vote, ties
+  ///    → newest). Walks back through today's exercises when a newer
+  ///    exercise has no history yet.
+  /// 3. Day detection → finished workout with the highest overlap to
+  ///    today's exercises: continue after the anchor inside it, else its
+  ///    first not-yet-done exercise.
+  /// 4. Final fallback → next not-yet-done exercise of the most recent
+  ///    finished workout.
   Future<Exercise?> _predictNextExercise() async {
-    if (_exercises.isEmpty) {
-      final lastWorkout = await (widget.db.select(widget.db.workouts)
-            ..where((w) =>
-                w.gymId.equals(widget.gym.id) &
-                w.endedAt.isNotNull() &
-                w.id.isNotValue(_workout.id))
-          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
-          ..limit(1))
-          .getSingleOrNull();
-      if (lastWorkout == null) return null;
+    final doneIds = _exercises.map((e) => e.exercise.id).toSet();
+    if (doneIds.isEmpty) return _predictOpener();
+    final anchorId = _exercises.last.exercise.id;
 
-      final lastWes = await (widget.db.select(widget.db.workoutExercises)
-            ..where((we) => we.workoutId.equals(lastWorkout.id))
-            ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
-          .get();
-      if (lastWes.isEmpty) return null;
-
-      return (widget.db.select(widget.db.exercises)
-            ..where((e) => e.id.equals(lastWes.first.exerciseId)))
-          .getSingleOrNull();
+    // What usually comes next after the most recent exercise that has any
+    // history (newly added exercises have none yet).
+    for (final active in _exercises.reversed) {
+      final voted =
+          mostCommonSuccessor(await _successorsOf(active.exercise.id), doneIds);
+      if (voted != null) return _exerciseById(voted);
     }
 
-    final lastWorkout = await (widget.db.select(widget.db.workouts)
+    final dayMatch = await _findSimilarWorkout(doneIds);
+    if (dayMatch != null) {
+      final ordered = await _orderedExerciseIds(dayMatch.id);
+
+      final afterAnchor = nextAfterAnchor(anchorId, ordered, doneIds);
+      if (afterAnchor != null) return _exerciseById(afterAnchor);
+
+      final remaining = firstNotDone(ordered, doneIds);
+      if (remaining != null) return _exerciseById(remaining);
+    }
+
+    final recent = await _finishedWorkoutsInGym(limit: 1);
+    if (recent.isEmpty) return null;
+    return _nextUndoneIn(recent.first.id, doneIds);
+  }
+
+  /// Finished workouts of this gym (excluding the open one), newest first.
+  Future<List<Workout>> _finishedWorkoutsInGym({required int limit}) {
+    return (widget.db.select(widget.db.workouts)
           ..where((w) =>
               w.gymId.equals(widget.gym.id) &
               w.endedAt.isNotNull() &
               w.id.isNotValue(_workout.id))
-        ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
-        ..limit(1))
-        .getSingleOrNull();
-    if (lastWorkout == null) return null;
+          ..orderBy([(w) => OrderingTerm.desc(w.startedAt)])
+          ..limit(limit))
+        .get();
+  }
 
-    final lastWes = await (widget.db.select(widget.db.workoutExercises)
-          ..where((we) => we.workoutId.equals(lastWorkout.id))
+  /// Exercise IDs of [workoutId] in training order.
+  Future<List<int>> _orderedExerciseIds(int workoutId) async {
+    final wes = await (widget.db.select(widget.db.workoutExercises)
+          ..where((we) => we.workoutId.equals(workoutId))
           ..orderBy([(we) => OrderingTerm.asc(we.orderIdx)]))
         .get();
+    return wes.map((we) => we.exerciseId).toList();
+  }
 
-    final currentExerciseIds = _exercises.map((e) => e.exercise.id).toSet();
+  Future<Exercise?> _exerciseById(int id) =>
+      (widget.db.select(widget.db.exercises)..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
 
-    for (final we in lastWes) {
-      if (!currentExerciseIds.contains(we.exerciseId)) {
-        return (widget.db.select(widget.db.exercises)
-              ..where((e) => e.id.equals(we.exerciseId)))
-            .getSingleOrNull();
-      }
+  /// Opener heuristic for an empty session: prefer the 2nd-last workout's
+  /// first exercise so alternating training days get the other day's
+  /// opener; falls back to the most recent workout.
+  Future<Exercise?> _predictOpener() async {
+    final workouts = await _finishedWorkoutsInGym(limit: 2);
+    final candidates = workouts.length > 1
+        ? [workouts[1], workouts.first]
+        : workouts;
+    for (final w in candidates) {
+      final ids = await _orderedExerciseIds(w.id);
+      if (ids.isNotEmpty) return _exerciseById(ids.first);
     }
-
     return null;
+  }
+
+  /// Most recent finished workout in this gym with the highest overlap to
+  /// today's exercises; `null` when no workout overlaps at all.
+  Future<Workout?> _findSimilarWorkout(Set<int> doneIds) async {
+    final workouts = await _finishedWorkoutsInGym(limit: 30);
+    final pastWorkouts = <List<int>>[];
+    for (final w in workouts) {
+      pastWorkouts.add(await _orderedExerciseIds(w.id));
+    }
+    final index = findBestDayMatch(doneIds, pastWorkouts);
+    if (index == null) return null;
+    return workouts[index];
+  }
+
+  /// First not-yet-done exercise of [workoutId] in training order.
+  Future<Exercise?> _nextUndoneIn(int workoutId, Set<int> doneIds) async {
+    final nextId = firstNotDone(await _orderedExerciseIds(workoutId), doneIds);
+    if (nextId == null) return null;
+    return _exerciseById(nextId);
+  }
+
+  /// Immediate successors of [anchorId] across this gym's finished
+  /// workouts, newest first (`null` when the anchor ends a workout).
+  Future<List<int?>> _successorsOf(int anchorId) async {
+    final query = widget.db.select(widget.db.workoutExercises).join([
+      innerJoin(
+        widget.db.workouts,
+        widget.db.workouts.id.equalsExp(widget.db.workoutExercises.workoutId),
+      ),
+    ])
+      ..where(widget.db.workoutExercises.exerciseId.equals(anchorId) &
+          widget.db.workouts.gymId.equals(widget.gym.id) &
+          widget.db.workouts.endedAt.isNotNull() &
+          widget.db.workouts.id.isNotValue(_workout.id))
+      ..orderBy([OrderingTerm.desc(widget.db.workouts.startedAt)])
+      ..limit(10);
+
+    final successors = <int?>[];
+    final seenWorkouts = <int>{};
+    for (final row in await query.get()) {
+      final workout = row.readTableOrNull(widget.db.workouts);
+      if (workout == null || !seenWorkouts.add(workout.id)) continue;
+      successors.add(
+          immediateSuccessor(anchorId, await _orderedExerciseIds(workout.id)));
+    }
+    return successors;
   }
 
   Future<void> _showExercisePicker() async {

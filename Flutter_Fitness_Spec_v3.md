@@ -302,6 +302,7 @@ Unique: `(gym_id, name)`
 - Filtert nach Name UND Aliase (case-insensitive)
 - Zeigt nur Übungen des aktuellen Studios (`gym_id` = aktives Studio, siehe Abschnitt 2)
 - Listenelemente: Übungsname + Kategorie
+- Optionale Empfehlung "Empfohlen" oberhalb der Liste (heuristisch, strikt pro Studio — siehe Abschnitt 10, "Übungs-Vorschlag")
 - Bei Auswahl: lädt Ghost-Daten (letzte Sätze), erstellt ActiveExercise
 
 **FinishDialog:**
@@ -591,6 +592,7 @@ Ghost-Daten sind **strikt pro Studio getrennt** — es gibt keinen Studio-überg
 | Muskelversagen-Toggle | NEU | Pro Satz: "Zum Versagen" Chip (rein informativ, **beeinflusst Statistiken nicht**, v2 geklärt) |
 | Satz-Notiz | NEU | Optionales Textfeld pro Satz |
 | Rest-Timer verdrahtet | NEU | Button in unterer Leiste, Countdown-Overlay |
+| Übungs-Vorschlag "Empfohlen" | NEU | Nächste-Übungs-Empfehlung im ExercisePickerDialog, **strikt pro Studio** (Kandidaten ausschließlich aus abgeschlossenen Trainings dieses Studios, weil Übungsverfügbarkeit je Studio variiert): leerer Start → Eröffner des vorletzten Trainings (wechselnde Trainingstage), sonst **Mehrheitswahl über die direkten Nachfolger der zuletzt hinzugefügten Übung** in der Studio-Historie ("was kommt üblicherweise danach", Gleichstand → jüngeres Training; Übung ohne Historie → rückwärts durch die heutigen Übungen), dann Tages-Erkennung per Überlappung mit den heutigen Übungen (Fortsetzung nach der Anker-Übung, sonst erste noch offene Übung des Trainings), zuletzt nächste noch nicht erledigte Übung des letzten Trainings |
 | Kein Login | — | Single-User, direkter Start |
 | Komplett offline | — | Kein Internet, keine Server-Abhängigkeit |
 
