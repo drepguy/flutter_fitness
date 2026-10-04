@@ -53,6 +53,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   final ValueNotifier<int> _elapsedSeconds = ValueNotifier(0);
   final List<WorkoutSet> _pendingDeletes = [];
   Timer? _deleteTimer;
+  final List<_ActiveExercise> _pendingExerciseDeletes = [];
+  Timer? _exerciseDeleteTimer;
   Timer? _snackTimer;
 
   static final _setBorder = OutlineInputBorder(
@@ -99,6 +101,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     _restTicker?.dispose();
     _stopwatchTimer?.cancel();
     _deleteTimer?.cancel();
+    _exerciseDeleteTimer?.cancel();
     _scrollController.dispose();
     _elapsedSeconds.dispose();
     _restDisplaySeconds.dispose();
@@ -469,15 +472,56 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
     if (exercise != null) _addExercise(exercise);
   }
 
+  /// Soft-deletes [ae] with an undo snackbar, mirroring [_deleteSet]: the
+  /// DB row (and its sets via cascade) is only removed after the 8s window.
   Future<void> _removeExercise(_ActiveExercise ae) async {
-    for (final set in ae.sets) {
-      _controllers.remove(set.id)?.dispose();
-      _focusNodes.remove(set.id)?.dispose();
-    }
-    await (widget.db.delete(widget.db.workoutExercises)
-          ..where((w) => w.id.equals(ae.workoutExercise.id)))
-        .go();
+    final index = _exercises.indexOf(ae);
     setState(() => _exercises.remove(ae));
+    _pendingExerciseDeletes.add(ae);
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      AppTheme.undoSnackBar(
+        message: '${ae.exercise.name} gelöscht',
+        onUndo: () {
+          _snackTimer?.cancel();
+          _pendingExerciseDeletes.remove(ae);
+          _exerciseDeleteTimer?.cancel();
+          setState(() {
+            _exercises.insert(
+                index < _exercises.length ? index : _exercises.length, ae);
+          });
+        },
+      ),
+    );
+
+    _snackTimer?.cancel();
+    _snackTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted) messenger.hideCurrentSnackBar();
+    });
+
+    _exerciseDeleteTimer?.cancel();
+    _exerciseDeleteTimer = Timer(
+      const Duration(seconds: 8),
+      _flushPendingExerciseDeletes,
+    );
+  }
+
+  /// Removes pending exercises from the DB (sets follow via cascade) and
+  /// disposes their controllers.
+  Future<void> _flushPendingExerciseDeletes() async {
+    for (final del in List.of(_pendingExerciseDeletes)) {
+      await (widget.db.delete(widget.db.workoutExercises)
+            ..where((w) => w.id.equals(del.workoutExercise.id)))
+          .go();
+      for (final set in del.sets) {
+        _controllers.remove(set.id)?.dispose();
+        _focusNodes.remove(set.id)?.dispose();
+      }
+    }
+    _pendingExerciseDeletes.clear();
   }
 
   Future<void> _addSet(_ActiveExercise ae) async {
@@ -671,6 +715,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
           .go();
     }
     _pendingDeletes.clear();
+    _exerciseDeleteTimer?.cancel();
+    await _flushPendingExerciseDeletes();
     for (final ae in _exercises) {
       await _renumberSets(ae.workoutExercise.id);
     }
@@ -711,6 +757,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
   Future<void> _cancelWorkout() async {
     _deleteTimer?.cancel();
     _pendingDeletes.clear();
+    _exerciseDeleteTimer?.cancel();
+    _pendingExerciseDeletes.clear();
     await (widget.db.delete(widget.db.workoutSets)
           ..where((s) =>
               s.workoutExerciseId.isIn(_exercises.map((e) => e.workoutExercise.id))))
